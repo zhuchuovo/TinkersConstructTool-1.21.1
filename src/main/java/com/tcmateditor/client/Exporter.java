@@ -34,7 +34,7 @@ public final class Exporter {
   /** Mod jar description, data and assets in one file, loaded for every world on client and server */
   private static final String MODS_TOML = """
     modLoader="lowcodefml"
-    loaderVersion="[1,)"
+    loaderVersion="[47,)"
     license="All Rights Reserved"
 
     [[mods]]
@@ -48,15 +48,15 @@ public final class Exporter {
 
     [[dependencies.%1$s]]
     modId="tconstruct"
-    type="required"
+    mandatory=true
     versionRange="[3,)"
     ordering="AFTER"
     side="BOTH"
 
     [[dependencies.%1$s]]
     modId="minecraft"
-    type="required"
-    versionRange="[1.21.1,1.21.2)"
+    mandatory=true
+    versionRange="[1.20.1,1.20.2)"
     ordering="NONE"
     side="BOTH"
     """;
@@ -79,20 +79,20 @@ public final class Exporter {
     manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
     manifest.getMainAttributes().put(new Attributes.Name("Automatic-Module-Name"), modId);
     try (JarOutputStream jar = new JarOutputStream(Files.newOutputStream(modJar), manifest)) {
-      put(jar, "META-INF/neoforge.mods.toml", MODS_TOML.formatted(modId, workspace.namespace, summary).getBytes(StandardCharsets.UTF_8));
-      put(jar, "pack.mcmeta", LivePack.mcmeta("Tinkers' Construct materials (" + workspace.namespace + ")", 48).getBytes(StandardCharsets.UTF_8));
+      put(jar, "META-INF/mods.toml", MODS_TOML.formatted(modId, workspace.namespace, summary).getBytes(StandardCharsets.UTF_8));
+      put(jar, "pack.mcmeta", LivePack.mcmeta("Tinkers' Construct materials (" + workspace.namespace + ")", 15).getBytes(StandardCharsets.UTF_8));
       putAll(jar, data, assets);
     }
 
     // or a data pack and a resource pack
     Path dataZip = folder.resolve(name + "-datapack.zip");
     try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(dataZip))) {
-      put(zip, "pack.mcmeta", LivePack.mcmeta("Tinkers' Construct materials (" + workspace.namespace + ")", 48).getBytes(StandardCharsets.UTF_8));
+      put(zip, "pack.mcmeta", LivePack.mcmeta("Tinkers' Construct materials (" + workspace.namespace + ")", 15).getBytes(StandardCharsets.UTF_8));
       putAll(zip, data, Map.of());
     }
     Path resourceZip = folder.resolve(name + "-resourcepack.zip");
     try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(resourceZip))) {
-      put(zip, "pack.mcmeta", LivePack.mcmeta("Tinkers' Construct material textures (" + workspace.namespace + ")", 34).getBytes(StandardCharsets.UTF_8));
+      put(zip, "pack.mcmeta", LivePack.mcmeta("Tinkers' Construct material textures (" + workspace.namespace + ")", 15).getBytes(StandardCharsets.UTF_8));
       putAll(zip, Map.of(), assets);
     }
 

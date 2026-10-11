@@ -3,7 +3,6 @@ package com.tcmateditor.client;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.serialization.JsonOps;
 import com.tcmateditor.TCMatEditor;
 import com.tcmateditor.client.texture.Colors;
 import com.tcmateditor.model.LangText;
@@ -20,7 +19,6 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import slimeknights.tconstruct.library.client.materials.MaterialRenderInfo;
 import slimeknights.tconstruct.library.client.materials.MaterialRenderInfoLoader;
 import slimeknights.tconstruct.library.materials.IMaterialRegistry;
@@ -100,8 +98,7 @@ public final class MaterialImporter {
     // items from the synced recipe list
     try {
       if (Minecraft.getInstance().level != null) {
-        for (RecipeHolder<MaterialRecipe> holder : Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(TinkerRecipeTypes.MATERIAL.get())) {
-          MaterialRecipe recipe = holder.value();
+        for (MaterialRecipe recipe : Minecraft.getInstance().level.getRecipeManager().getAllRecipesFor(TinkerRecipeTypes.MATERIAL.get())) {
           if (recipe.getMaterial().getId().equals(id) && !recipe.getMaterial().getVariant().hasVariant()) {
             for (String ref : ingredientRefs(recipe.getIngredient())) {
               doc.items.add(new ItemRef(ref, recipe.getValue(), recipe.getNeeded()));
@@ -199,7 +196,7 @@ public final class MaterialImporter {
   public static List<String> ingredientRefs(Ingredient ingredient) {
     List<String> refs = new ArrayList<>();
     try {
-      JsonElement json = Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, ingredient).getOrThrow();
+      JsonElement json = ingredient.toJson();
       collectRefs(json, refs);
     } catch (RuntimeException ignored) {}
     if (refs.isEmpty()) {
@@ -228,7 +225,7 @@ public final class MaterialImporter {
   @Nullable
   private static List<TextureDoc.Stop> readPalette(MaterialId id) {
     ResourceManager manager = Minecraft.getInstance().getResourceManager();
-    ResourceLocation location = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), MaterialRenderInfoLoader.FOLDER + "/" + id.getPath() + ".json");
+    ResourceLocation location = new ResourceLocation(id.getNamespace(), MaterialRenderInfoLoader.FOLDER + "/" + id.getPath() + ".json");
     for (int depth = 0; depth < 4; depth++) {
       JsonObject json = readJson(manager, location);
       if (json == null) {
@@ -309,7 +306,7 @@ public final class MaterialImporter {
   public static Map<String,String> readLang(String namespace, String code) {
     Map<String,String> map = new HashMap<>();
     ResourceManager manager = Minecraft.getInstance().getResourceManager();
-    List<Resource> stack = manager.getResourceStack(ResourceLocation.fromNamespaceAndPath(namespace, "lang/" + code + ".json"));
+    List<Resource> stack = manager.getResourceStack(new ResourceLocation(namespace, "lang/" + code + ".json"));
     for (Resource resource : stack) {
       try (BufferedReader reader = resource.openAsReader()) {
         JsonObject json = GsonHelper.parse(reader);

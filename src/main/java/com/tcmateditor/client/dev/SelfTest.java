@@ -19,12 +19,15 @@ import com.tcmateditor.model.TextureDoc;
 import com.tcmateditor.model.Workspace;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.AccessibilityOnboardingScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.LevelResource;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialId;
@@ -53,6 +56,9 @@ public final class SelfTest {
 
   public static final boolean ENABLED = Boolean.getBoolean("tcmateditor.selftest");
   private static final String NS = "selftest";
+  private static final String WORLD = "tcmateditor_selftest";
+  private static boolean worldStarted;
+  private static long worldStartTime;
 
   private static int step = 0;
   private static int wait = 0;
@@ -78,19 +84,66 @@ public final class SelfTest {
 
   public static void tick() {
     Minecraft mc = Minecraft.getInstance();
-    if (!ENABLED || mc.player == null || step < 0) {
+    if (!ENABLED || step < 0) {
       return;
     }
-    if (wait > 0) {
-      wait--;
-      return;
-    }
+    mc.options.pauseOnLostFocus = false;
     try {
+      if (mc.player == null) {
+        prepareWorld(mc);
+        return;
+      }
+      Path testWorld = mc.gameDirectory.toPath().resolve("saves").resolve(WORLD).toAbsolutePath().normalize();
+      if (!worldStarted || mc.getSingleplayerServer() == null
+        || !mc.getSingleplayerServer().getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().equals(testWorld)) {
+        check(false, "self test requires its dedicated world " + WORLD);
+        finish();
+        return;
+      }
+      if (wait > 0) {
+        wait--;
+        return;
+      }
       run(mc);
     } catch (Throwable e) {
       TCMatEditor.LOG.error("[SELFTEST] crashed at step {}", step, e);
       check(false, "exception at step " + step + ": " + e);
       finish();
+    }
+  }
+
+  /** Enters only the dedicated test save, after the initial resource load has finished. */
+  private static void prepareWorld(Minecraft mc) {
+    if (worldStarted) {
+      if (System.nanoTime() - worldStartTime > 300_000_000_000L) {
+        check(false, "timed out entering self test world " + WORLD);
+        finish();
+      }
+      return;
+    }
+    if (mc.getOverlay() != null) {
+      return;
+    }
+    if (mc.screen instanceof AccessibilityOnboardingScreen onboarding) {
+      onboarding.onClose();
+      return;
+    }
+    if (!(mc.screen instanceof TitleScreen)) {
+      return;
+    }
+    worldStarted = true;
+    worldStartTime = System.nanoTime();
+    if (Files.isDirectory(mc.gameDirectory.toPath().resolve("saves").resolve(WORLD))) {
+      TCMatEditor.LOG.info("[SELFTEST] loading dedicated world {}", WORLD);
+      mc.createWorldOpenFlows().loadLevel(mc.screen, WORLD);
+    } else {
+      TCMatEditor.LOG.info("[SELFTEST] creating dedicated creative world {}", WORLD);
+      var settings = new net.minecraft.world.level.LevelSettings("Tinkers' Editor self test", net.minecraft.world.level.GameType.CREATIVE,
+        false, net.minecraft.world.Difficulty.PEACEFUL, true, new net.minecraft.world.level.GameRules(),
+        net.minecraft.world.level.WorldDataConfiguration.DEFAULT);
+      mc.createWorldOpenFlows().createFreshLevel(WORLD, settings, new net.minecraft.world.level.levelgen.WorldOptions(1234L, false, false),
+        access -> access.registryOrThrow(net.minecraft.core.registries.Registries.WORLD_PRESET)
+          .getHolderOrThrow(net.minecraft.world.level.levelgen.presets.WorldPresets.FLAT).value().createWorldDimensions());
     }
   }
 
@@ -178,12 +231,12 @@ public final class SelfTest {
           check(result.problems().stream().anyMatch(p -> p.key().equals("unknown_fluid") && p.detail().equals("minecraft:diamond"))
             && result.problems().stream().anyMatch(p -> p.key().equals("unknown_item") && p.detail().equals("minecraft:not_an_item")), "export reports unknown fluid and item: " + result.problems());
           try (java.util.zip.ZipFile jar = new java.util.zip.ZipFile(result.modJar().toFile())) {
-            String toml = new String(jar.getInputStream(jar.getEntry("META-INF/neoforge.mods.toml")).readAllBytes(), StandardCharsets.UTF_8);
+            String toml = new String(jar.getInputStream(jar.getEntry("META-INF/mods.toml")).readAllBytes(), StandardCharsets.UTF_8);
             check(toml.contains("modLoader=\"lowcodefml\"") && jar.getEntry("pack.mcmeta") != null, "mod jar has a code free mod description");
             check(jar.getEntry("data/" + NS + "/tinkering/materials/definition/ruby.json") != null && jar.getEntry("assets/" + NS + "/lang/zh_cn.json") != null
               && jar.getEntry("assets/" + NS + "/tinkering/materials/ruby.json") != null, "mod jar holds data and assets");
-            check(jar.getEntry("data/" + NS + "/tinkering/materials/definition/broken.json") != null && jar.getEntry("data/" + NS + "/recipe/tcmateditor/broken/casting.json") == null
-              && jar.getEntry("data/" + NS + "/recipe/tcmateditor/broken/item_0.json") == null, "broken recipes left out of the export");
+            check(jar.getEntry("data/" + NS + "/tinkering/materials/definition/broken.json") != null && jar.getEntry("data/" + NS + "/recipes/tcmateditor/broken/casting.json") == null
+              && jar.getEntry("data/" + NS + "/recipes/tcmateditor/broken/item_0.json") == null, "broken recipes left out of the export");
           }
         } catch (IOException e) {
           check(false, "export failed " + e);
@@ -224,7 +277,7 @@ public final class SelfTest {
       case 14 -> {
         shot("small_entry");
         // scroll down to the effect lines
-        mc.screen.mouseScrolled(mc.getWindow().getGuiScaledWidth() * 0.7, mc.getWindow().getGuiScaledHeight() * 0.6, 0, -16);
+        mc.screen.mouseScrolled(mc.getWindow().getGuiScaledWidth() * 0.7, mc.getWindow().getGuiScaledHeight() * 0.6, -16);
         wait = 4;
         step = 140;
       }
@@ -355,6 +408,7 @@ public final class SelfTest {
     REPORT.add(failures == 0 ? "ALL PASSED" : failures + " FAILED");
     try {
       Path file = EditorPaths.root().resolve("selftest.txt");
+      Files.createDirectories(file.getParent());
       Files.writeString(file, String.join("\n", REPORT), StandardCharsets.UTF_8);
     } catch (IOException e) {
       TCMatEditor.LOG.error("[SELFTEST] could not write report", e);
@@ -393,10 +447,10 @@ public final class SelfTest {
   private static void verifyUpgrade() {
     Minecraft mc = Minecraft.getInstance();
     var recipes = mc.level.getRecipeManager();
-    var strict = recipes.byKey(ResourceLocation.fromNamespaceAndPath(NS, "tcmateditor/upgrade/sharp"));
-    check(strict.isPresent() && strict.get().value() instanceof com.tcmateditor.recipe.PositionalModifierRecipe, "positional upgrade recipe loaded: " + strict.map(r -> r.value().getClass().getSimpleName()).orElse("missing"));
-    check(recipes.byKey(ResourceLocation.fromNamespaceAndPath(NS, "tcmateditor/upgrade/sharp_any_order")).isEmpty(), "fallback recipe skipped while the mod is loaded");
-    if (strict.isEmpty() || !(strict.get().value() instanceof com.tcmateditor.recipe.PositionalModifierRecipe recipe)) {
+    var strict = recipes.byKey(new ResourceLocation(NS, "tcmateditor/upgrade/sharp"));
+    check(strict.isPresent() && strict.get() instanceof com.tcmateditor.recipe.PositionalModifierRecipe, "positional upgrade recipe loaded: " + strict.map(r -> r.getClass().getSimpleName()).orElse("missing"));
+    check(recipes.byKey(new ResourceLocation(NS, "tcmateditor/upgrade/sharp_any_order")).isEmpty(), "fallback recipe skipped while the mod is loaded");
+    if (strict.isEmpty() || !(strict.get() instanceof com.tcmateditor.recipe.PositionalModifierRecipe recipe)) {
       return;
     }
     ItemStack sword = slimeknights.tconstruct.library.tools.helper.ToolBuildHandler.createSingleMaterial(slimeknights.tconstruct.tools.TinkerTools.sword.get(),
@@ -512,10 +566,24 @@ public final class SelfTest {
     check(copy.stats.containsKey("tconstruct:head") && copy.stats.size() >= 5, "imported iron stats: " + copy.stats.keySet());
     check(!copy.defaultTraits.isEmpty(), "imported iron traits: " + copy.defaultTraits.size());
     check(!copy.items.isEmpty(), "imported iron items: " + copy.items.size());
-    check(copy.statTraits.keySet().equals(java.util.Set.of("tconstruct:armor", "tconstruct:skull")), "imported iron trait overrides collapsed: " + copy.statTraits.keySet());
+    // Official 1.20.1 iron gives maille only projectile protection; full armor also gets iron_armor.
+    // Preserve this distinct override while collapsing the redundant per-stat copies of armor/default traits.
+    check(copy.statTraits.keySet().equals(java.util.Set.of("tconstruct:armor", "tconstruct:maille", "tconstruct:skull")),
+      "imported official iron trait overrides collapsed: " + copy.statTraits.keySet());
+    check(traitNames(copy.defaultTraits).equals(List.of("tconstruct:magnetic@1")), "imported iron default magnetic trait");
+    check(traitNames(copy.statTraits.getOrDefault("tconstruct:armor", List.of())).equals(List.of("tconstruct:projectile_protection@1", "tconstruct:iron_armor@1")),
+      "imported iron armor traits preserved");
+    check(traitNames(copy.statTraits.getOrDefault("tconstruct:maille", List.of())).equals(List.of("tconstruct:projectile_protection@1")),
+      "imported iron distinct maille override preserved");
+    check(traitNames(copy.statTraits.getOrDefault("tconstruct:skull", List.of())).equals(List.of("tconstruct:rebuff@1", "tconstruct:husk_disguise@1")),
+      "imported iron distinct skull override preserved");
     check(copy.texture.palette.size() >= 5, "imported iron palette: " + copy.texture.palette.size());
     check(copy.lang.containsKey("zh_cn") && !copy.lang.get("zh_cn").name.isEmpty(), "imported iron zh_cn name: " + (copy.lang.containsKey("zh_cn") ? copy.lang.get("zh_cn").name : "-"));
     workspace.materials.add(copy);
+  }
+
+  private static List<String> traitNames(List<MaterialDoc.TraitRef> traits) {
+    return traits.stream().map(trait -> trait.id + "@" + trait.level).toList();
   }
 
   private static volatile String attackResult = null;
@@ -567,9 +635,9 @@ public final class SelfTest {
     check(ModifierManager.INSTANCE.contains(sharp), "custom entry loaded as modifier");
     check(I18n.exists("material.selftest.ruby"), "material name translated: " + I18n.get("material.selftest.ruby"));
     check(I18n.exists("modifier.selftest.sharp"), "entry name translated: " + I18n.get("modifier.selftest.sharp"));
-    TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ResourceLocation.parse("tconstruct:item/tool/pickaxe/head_selftest_ruby"));
+    TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(new ResourceLocation("tconstruct:item/tool/pickaxe/head_selftest_ruby"));
     check(!sprite.contents().name().equals(MissingTextureAtlasSprite.getLocation()), "generated pickaxe head sprite in atlas " + sprite.contents().name());
-    TextureAtlasSprite ironHead = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ResourceLocation.parse("tconstruct:item/tool/pickaxe/head_selftest_iron_copy"));
+    TextureAtlasSprite ironHead = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(new ResourceLocation("tconstruct:item/tool/pickaxe/head_selftest_iron_copy"));
     check(!ironHead.contents().name().equals(MissingTextureAtlasSprite.getLocation()), "generated iron copy sprite in atlas");
     // modifier slots from the material and from an entry line
     check(ModifierManager.INSTANCE.contains(new ModifierId(NS, "ruby_slots")), "material slot trait loaded as modifier");

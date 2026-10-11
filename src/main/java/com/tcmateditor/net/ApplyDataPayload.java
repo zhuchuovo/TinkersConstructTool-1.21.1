@@ -1,27 +1,24 @@
 package com.tcmateditor.net;
 
-import com.tcmateditor.TCMatEditor;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 
 /**
  * Client to server: one chunk of the gzip compressed data file map.
  * Data is chunked as serverbound custom payloads are limited to 32 KiB.
  */
-public record ApplyDataPayload(int session, int index, int total, byte[] data) implements CustomPacketPayload {
+public record ApplyDataPayload(int session, int index, int total, byte[] data) {
   public static final int CHUNK_SIZE = 30000;
-  public static final Type<ApplyDataPayload> TYPE = new Type<>(TCMatEditor.id("apply_data"));
-  public static final StreamCodec<ByteBuf,ApplyDataPayload> CODEC = StreamCodec.composite(
-    ByteBufCodecs.VAR_INT, ApplyDataPayload::session,
-    ByteBufCodecs.VAR_INT, ApplyDataPayload::index,
-    ByteBufCodecs.VAR_INT, ApplyDataPayload::total,
-    ByteBufCodecs.BYTE_ARRAY, ApplyDataPayload::data,
-    ApplyDataPayload::new);
+  public static ApplyDataPayload decode(FriendlyByteBuf buffer) {
+    return new ApplyDataPayload(buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readByteArray(CHUNK_SIZE));
+  }
 
-  @Override
-  public Type<? extends CustomPacketPayload> type() {
-    return TYPE;
+  public void encode(FriendlyByteBuf buffer) {
+    if (data.length > CHUNK_SIZE) {
+      throw new IllegalArgumentException("Editor data chunk exceeds " + CHUNK_SIZE + " bytes");
+    }
+    buffer.writeVarInt(session);
+    buffer.writeVarInt(index);
+    buffer.writeVarInt(total);
+    buffer.writeByteArray(data);
   }
 }

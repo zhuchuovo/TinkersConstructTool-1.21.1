@@ -71,7 +71,7 @@ public class UpgradeToolsPage implements Page {
     form.header(Names.tr("section.tools_preview"));
     List<ItemStack> allowed = new ArrayList<>();
     int total = 0;
-    for (Holder<Item> holder : BuiltInRegistries.ITEM.getTagOrEmpty(TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("tconstruct", "modifiable")))) {
+    for (Holder<Item> holder : BuiltInRegistries.ITEM.getTagOrEmpty(TagKey.create(Registries.ITEM, new ResourceLocation("tconstruct", "modifiable")))) {
       total++;
       if (matchesAny(holder, doc.allowTools) && !matchesAny(holder, doc.denyTools)) {
         allowed.add(slimeknights.tconstruct.library.tools.item.IModifiableDisplay.getDisplayStack(holder.value()));

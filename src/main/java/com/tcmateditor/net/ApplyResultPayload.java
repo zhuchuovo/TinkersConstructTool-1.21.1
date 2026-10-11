@@ -1,10 +1,6 @@
 package com.tcmateditor.net;
 
-import com.tcmateditor.TCMatEditor;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 
 /**
  * Server to client: result of applying data.
@@ -12,18 +8,16 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  * @param detail      Argument for the message
  * @param millis      Time taken by the reload
  */
-public record ApplyResultPayload(int session, boolean success, String messageKey, String detail, int millis) implements CustomPacketPayload {
-  public static final Type<ApplyResultPayload> TYPE = new Type<>(TCMatEditor.id("apply_result"));
-  public static final StreamCodec<ByteBuf,ApplyResultPayload> CODEC = StreamCodec.composite(
-    ByteBufCodecs.VAR_INT, ApplyResultPayload::session,
-    ByteBufCodecs.BOOL, ApplyResultPayload::success,
-    ByteBufCodecs.STRING_UTF8, ApplyResultPayload::messageKey,
-    ByteBufCodecs.STRING_UTF8, ApplyResultPayload::detail,
-    ByteBufCodecs.VAR_INT, ApplyResultPayload::millis,
-    ApplyResultPayload::new);
+public record ApplyResultPayload(int session, boolean success, String messageKey, String detail, int millis) {
+  public static ApplyResultPayload decode(FriendlyByteBuf buffer) {
+    return new ApplyResultPayload(buffer.readVarInt(), buffer.readBoolean(), buffer.readUtf(), buffer.readUtf(), buffer.readVarInt());
+  }
 
-  @Override
-  public Type<? extends CustomPacketPayload> type() {
-    return TYPE;
+  public void encode(FriendlyByteBuf buffer) {
+    buffer.writeVarInt(session);
+    buffer.writeBoolean(success);
+    buffer.writeUtf(messageKey);
+    buffer.writeUtf(detail);
+    buffer.writeVarInt(millis);
   }
 }

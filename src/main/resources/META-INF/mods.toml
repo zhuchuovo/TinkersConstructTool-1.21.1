@@ -7,28 +7,36 @@ modId="tcmateditor"
 version="${version}"
 displayName="Tinkers' Material Editor"
 authors="nizabushangtianm"
+displayTest="IGNORE_SERVER_VERSION"
 description='''
-In-game material editor for Tinkers' Construct (Shift+Z).
-Everything it creates is plain Tinkers' Construct data/resource pack content, so exported materials keep working without this mod.
+In-game material editor for official Tinkers' Construct on NeoForge 1.20.1 (Shift+Z).
+Exported materials use standard Tinkers' Construct data/resource packs.
 '''
 
 [[dependencies.tcmateditor]]
-modId="neoforge"
-type="required"
-versionRange="${neo_range}"
+modId="forge"
+mandatory=true
+versionRange="${forge_range}"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.tcmateditor]]
 modId="minecraft"
-type="required"
+mandatory=true
 versionRange="${minecraft_range}"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.tcmateditor]]
+modId="mantle"
+mandatory=true
+versionRange="${mantle_range}"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.tcmateditor]]
 modId="tconstruct"
-type="required"
+mandatory=true
 versionRange="${tconstruct_range}"
 ordering="AFTER"
 side="BOTH"

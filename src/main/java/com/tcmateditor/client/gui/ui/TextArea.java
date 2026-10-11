@@ -111,7 +111,7 @@ public class TextArea extends UIElement {
 
   @Override
   public boolean mouseScrolled(double mx, double my, double sx, double sy) {
-    return box.canScroll() && box.mouseScrolled(mx, my, sx, sy);
+    return box.canScroll() && box.mouseScrolled(mx, my, sy);
   }
 
   @Override

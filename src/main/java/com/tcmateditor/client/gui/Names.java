@@ -22,7 +22,7 @@ public final class Names {
 
   private static ResourceLocation rl(String id) {
     ResourceLocation location = ResourceLocation.tryParse(id);
-    return location == null ? ResourceLocation.withDefaultNamespace("unknown") : location;
+    return location == null ? new ResourceLocation("unknown") : location;
   }
 
   /** Material stat type name, e.g. Head */

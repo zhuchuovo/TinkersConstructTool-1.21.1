@@ -8,7 +8,6 @@ import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialId;
@@ -51,12 +50,9 @@ public final class ServerApply {
 
   /* Apply */
 
-  public static void handleData(ApplyDataPayload payload, IPayloadContext context) {
-    if (!(context.player() instanceof ServerPlayer player)) {
-      return;
-    }
+  public static void handleData(ApplyDataPayload payload, ServerPlayer player) {
     if (!canEdit(player)) {
-      context.reply(new ApplyResultPayload(payload.session(), false, "tcmateditor.status.no_permission", "", 0));
+      EditorNetwork.sendToPlayer(player, new ApplyResultPayload(payload.session(), false, "tcmateditor.status.no_permission", "", 0));
       return;
     }
     int total = payload.total();
@@ -87,7 +83,7 @@ public final class ServerApply {
       files = FilePacking.unpack(joined.toByteArray());
     } catch (IOException | RuntimeException e) {
       TCMatEditor.LOG.error("Received invalid editor data from {}", player.getName().getString(), e);
-      context.reply(new ApplyResultPayload(payload.session(), false, "tcmateditor.status.error", String.valueOf(e.getMessage()), 0));
+      EditorNetwork.sendToPlayer(player, new ApplyResultPayload(payload.session(), false, "tcmateditor.status.error", String.valueOf(e.getMessage()), 0));
       return;
     }
 
@@ -136,9 +132,7 @@ public final class ServerApply {
   }
 
   private static void sendResult(Request request, boolean success, String key, String detail, int millis) {
-    if (!request.player.hasDisconnected()) {
-      request.player.connection.send(new ApplyResultPayload(request.session, success, key, detail, millis));
-    }
+    EditorNetwork.sendToPlayer(request.player, new ApplyResultPayload(request.session, success, key, detail, millis));
   }
 
   /** Replaces the data folder of the live pack */
@@ -180,10 +174,7 @@ public final class ServerApply {
 
   /* Give test tools */
 
-  public static void handleGive(GiveTestPayload payload, IPayloadContext context) {
-    if (!(context.player() instanceof ServerPlayer player)) {
-      return;
-    }
+  public static void handleGive(GiveTestPayload payload, ServerPlayer player) {
     if (!player.isCreative() && !canEdit(player)) {
       return;
     }
@@ -193,7 +184,7 @@ public final class ServerApply {
     }
     IMaterial material = MaterialRegistry.getMaterial(id);
     if (material == IMaterial.UNKNOWN) {
-      context.reply(new ApplyResultPayload(-1, false, "tcmateditor.status.unknown_material", payload.material(), 0));
+      EditorNetwork.sendToPlayer(player, new ApplyResultPayload(-1, false, "tcmateditor.status.unknown_material", payload.material(), 0));
       return;
     }
     MaterialVariant variant = MaterialVariant.of(material);
@@ -208,6 +199,6 @@ public final class ServerApply {
         }
       }
     }
-    context.reply(new ApplyResultPayload(-1, given > 0, given > 0 ? "tcmateditor.status.given" : "tcmateditor.status.nothing_given", Integer.toString(given), 0));
+    EditorNetwork.sendToPlayer(player, new ApplyResultPayload(-1, given > 0, given > 0 ? "tcmateditor.status.given" : "tcmateditor.status.nothing_given", Integer.toString(given), 0));
   }
 }

@@ -83,7 +83,7 @@ class ModelTest {
     doc.tier = 3;
     doc.slots.put("defense", -1);
     doc.defaultTraits.add(new MaterialDoc.TraitRef("mymats:sharp", 2));
-    doc.items.add(new MaterialDoc.ItemRef("#c:gems/ruby", 1, 1));
+    doc.items.add(new MaterialDoc.ItemRef("#forge:gems/ruby", 1, 1));
     doc.lang.put("en_us", new LangText("Ruby", "Shiny", "A gem"));
 
     MaterialDoc read = Workspace.GSON.fromJson(Workspace.GSON.toJson(doc), MaterialDoc.class);
@@ -93,7 +93,7 @@ class ModelTest {
     assertEquals(Map.of("defense", -1), read.slots);
     assertEquals("mymats:sharp", read.defaultTraits.get(0).id);
     assertEquals(2, read.defaultTraits.get(0).level);
-    assertEquals("#c:gems/ruby", read.items.get(0).ingredient);
+    assertEquals("#forge:gems/ruby", read.items.get(0).ingredient);
     assertEquals("Ruby", read.lang.get("en_us").name);
   }
 

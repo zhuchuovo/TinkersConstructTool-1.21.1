@@ -4,9 +4,9 @@ import com.tcmateditor.net.EditorNetwork;
 import com.tcmateditor.pack.LivePack;
 import com.tcmateditor.recipe.EditorRecipes;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,15 +21,16 @@ public final class TCMatEditor {
   public static final String MOD_ID = "tcmateditor";
   public static final Logger LOG = LoggerFactory.getLogger("TCMatEditor");
 
-  public TCMatEditor(IEventBus modBus, ModContainer container) {
+  public TCMatEditor() {
+    IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
     LivePack.ensureExists();
     modBus.addListener(LivePack::addPackFinders);
-    modBus.addListener(EditorNetwork::register);
+    EditorNetwork.register();
     EditorRecipes.register(modBus);
   }
 
   public static ResourceLocation id(String path) {
-    return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
+    return new ResourceLocation(MOD_ID, path);
   }
 
   public static String key(String path) {

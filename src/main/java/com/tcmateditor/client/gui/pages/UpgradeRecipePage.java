@@ -94,7 +94,7 @@ public class UpgradeRecipePage implements Page {
       Page.changed();
     })).size(18, 16)).at(form.pad + panelX, rowY).tooltip(Names.tr("hint.pick_item"));
     field[0] = new TextField(input.ingredient, Math.max(60, panelW - 22));
-    field[0].hint(Component.literal("minecraft:diamond / #c:gems"));
+    field[0].hint(Component.literal("minecraft:diamond / #forge:gems"));
     field[0].validator(text -> text.isBlank() || GenUtil.isKnownItem(text));
     field[0].onChange(text -> {
       input.ingredient = text.trim();

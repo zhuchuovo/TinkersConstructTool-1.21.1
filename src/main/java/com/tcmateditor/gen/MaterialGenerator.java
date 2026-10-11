@@ -53,7 +53,7 @@ public final class MaterialGenerator {
     }
 
     // part builder recipes
-    String recipeBase = "data/" + ns + "/recipe/tcmateditor/" + path + "/";
+    String recipeBase = "data/" + ns + "/recipes/tcmateditor/" + path + "/";
     int index = 0;
     for (ItemRef item : doc.items) {
       if (item.ingredient == null || item.ingredient.isBlank()) {
@@ -113,14 +113,14 @@ public final class MaterialGenerator {
         entry.getValue().getAsJsonArray().add(trait.deepCopy());
       }
     }
-    if (defaults.isEmpty() && perStat.isEmpty()) {
+    if (defaults.isEmpty() && perStat.size() == 0) {
       return null;
     }
     JsonObject json = new JsonObject();
     if (!defaults.isEmpty()) {
       json.add("default", defaults);
     }
-    if (!perStat.isEmpty()) {
+    if (perStat.size() > 0) {
       json.add("perStat", perStat);
     }
     return json;
@@ -146,7 +146,7 @@ public final class MaterialGenerator {
     JsonObject json = new JsonObject();
     json.addProperty("level_display", "tconstruct:no_levels");
     // like Tinkers' own slot modifiers, only listed in the tinker station
-    json.addProperty("tooltip_display", "tinker_station");
+    json.addProperty("show_in_tooltips", "bonus_slot");
     JsonArray modules = new JsonArray();
     for (String type : EntryGenerator.MODIFIER_SLOT_TYPES) {
       Integer amount = doc.slots.get(type);

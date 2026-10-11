@@ -7,31 +7,44 @@ import com.tcmateditor.client.texture.PartTextureLibrary;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
-import net.neoforged.neoforge.client.settings.KeyModifier;
-import net.neoforged.neoforge.common.NeoForge;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
+import net.minecraftforge.client.settings.KeyModifier;
 import org.lwjgl.glfw.GLFW;
 
 /** Client entry point: Shift+Z opens the editor */
-@Mod(value = TCMatEditor.MOD_ID, dist = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = TCMatEditor.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class TCMatEditorClient {
   public static final KeyMapping OPEN_EDITOR = new KeyMapping("key.tcmateditor.open", KeyConflictContext.IN_GAME, KeyModifier.SHIFT,
     InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Z, "key.categories.tcmateditor");
 
-  public TCMatEditorClient(IEventBus modBus, ModContainer container) {
-    modBus.addListener(RegisterKeyMappingsEvent.class, event -> event.register(OPEN_EDITOR));
-    modBus.addListener(RegisterClientReloadListenersEvent.class, event ->
-      event.registerReloadListener((ResourceManagerReloadListener) manager -> PartTextureLibrary.clear()));
-    NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class, event -> onTick());
-    NeoForge.EVENT_BUS.addListener(ClientPlayerNetworkEvent.LoggingOut.class, event -> ClientApply.reset());
+  @SubscribeEvent
+  public static void registerKeys(RegisterKeyMappingsEvent event) {
+    event.register(OPEN_EDITOR);
+  }
+
+  @SubscribeEvent
+  public static void registerReloadListeners(RegisterClientReloadListenersEvent event) {
+    event.registerReloadListener((ResourceManagerReloadListener) manager -> PartTextureLibrary.clear());
+  }
+
+  @Mod.EventBusSubscriber(modid = TCMatEditor.MOD_ID, value = Dist.CLIENT)
+  public static final class GameEvents {
+    @SubscribeEvent
+    public static void tick(TickEvent.ClientTickEvent event) {
+      if (event.phase == TickEvent.Phase.END) onTick();
+    }
+
+    @SubscribeEvent
+    public static void logout(ClientPlayerNetworkEvent.LoggingOut event) {
+      ClientApply.reset();
+    }
   }
 
   private static void onTick() {

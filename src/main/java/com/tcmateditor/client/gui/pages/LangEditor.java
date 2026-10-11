@@ -32,7 +32,7 @@ public final class LangEditor {
 
     LangText text = lang.computeIfAbsent(code, c -> new LangText());
     form.row(Names.tr("label.name"), new TextField(text.name, form.controlWidth()).maxLength(64)
-      .hint(Component.literal(Languages.resolve(lang, code, t -> t.name)).withColor(Theme.TEXT_FAINT))
+      .hint(Component.literal(Languages.resolve(lang, code, t -> t.name)).withStyle(style -> style.withColor(Theme.TEXT_FAINT)))
       .onChange(v -> { text.name = v; Page.changed(); }));
     form.row(Names.tr("label.flavor"), new TextField(text.flavor, form.controlWidth()).maxLength(200)
       .hint(Names.tr("hint.flavor"))

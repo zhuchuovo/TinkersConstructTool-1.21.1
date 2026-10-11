@@ -51,7 +51,7 @@ public final class UpgradeGenerator {
     if (inputs.isEmpty()) {
       return;
     }
-    String base = "data/" + doc.namespace() + "/recipe/tcmateditor/upgrade/" + doc.path();
+    String base = "data/" + doc.namespace() + "/recipes/tcmateditor/upgrade/" + doc.path();
     JsonElement tools = toolsJson(doc, problems);
     if (doc.strictSlots) {
       // exact slots with this mod, any order without it
@@ -68,7 +68,7 @@ public final class UpgradeGenerator {
     JsonObject json = new JsonObject();
     json.addProperty("type", type);
     if (conditions != null) {
-      json.add("neoforge:conditions", conditions);
+      json.add("conditions", conditions);
     }
     json.add("inputs", inputs.deepCopy());
     json.add("tools", tools.deepCopy());
@@ -89,14 +89,14 @@ public final class UpgradeGenerator {
     return json;
   }
 
-  /** NeoForge condition: this mod is (or is not) loaded */
+  /** NeoForge 1.20.1 retains Forge condition IDs. */
   private static JsonArray modLoaded(boolean loaded) {
     JsonObject condition = new JsonObject();
-    condition.addProperty("type", "neoforge:mod_loaded");
+    condition.addProperty("type", "forge:mod_loaded");
     condition.addProperty("modid", "tcmateditor");
     if (!loaded) {
       JsonObject not = new JsonObject();
-      not.addProperty("type", "neoforge:not");
+      not.addProperty("type", "forge:not");
       not.add("value", condition);
       condition = not;
     }
@@ -105,7 +105,7 @@ public final class UpgradeGenerator {
     return array;
   }
 
-  /** Allowed tools minus denied tools, using NeoForge's difference ingredient when needed */
+  /** Allowed tools minus denied tools, using the 1.20.1 Forge difference ingredient. */
   public static JsonElement toolsJson(UpgradeDoc doc, List<Problem> problems) {
     JsonElement allowed = ingredientList(doc, doc.allowTools, problems);
     if (allowed == null) {
@@ -118,7 +118,7 @@ public final class UpgradeGenerator {
       return allowed;
     }
     JsonObject difference = new JsonObject();
-    difference.addProperty("type", "neoforge:difference");
+    difference.addProperty("type", "forge:difference");
     difference.add("base", allowed);
     difference.add("subtracted", denied);
     return difference;

@@ -3,9 +3,7 @@ package com.tcmateditor.gen;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.mojang.serialization.JsonOps;
 import com.tcmateditor.gen.DataGenerator.Problem;
 import com.tcmateditor.model.EntryDoc;
 import com.tcmateditor.model.MaterialDoc;
@@ -13,19 +11,34 @@ import com.tcmateditor.model.UpgradeDoc;
 import com.tcmateditor.model.Workspace;
 import com.tcmateditor.recipe.PositionalModifierRecipe;
 import io.netty.buffer.Unpooled;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.RegistryOps;
+import net.minecraft.SharedConstants;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.Bootstrap;
 import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
-import net.neoforged.neoforge.common.conditions.ICondition;
+import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraftforge.common.crafting.CraftingHelper;
+import net.minecraftforge.common.crafting.DifferenceIngredient;
+import net.minecraftforge.common.crafting.VanillaIngredientSerializer;
+import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
+import net.minecraftforge.common.crafting.conditions.NotCondition;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import slimeknights.tconstruct.library.modifiers.Modifier;
 import slimeknights.tconstruct.library.modifiers.ModifierManager;
 import slimeknights.tconstruct.library.modifiers.impl.ComposableModifier;
+import slimeknights.tconstruct.library.modifiers.modules.ModifierModule;
+import slimeknights.tconstruct.library.modifiers.modules.behavior.AttributeModule;
+import slimeknights.tconstruct.library.modifiers.modules.build.ModifierSlotModule;
+import slimeknights.tconstruct.library.modifiers.modules.build.StatBoostModule;
+import slimeknights.tconstruct.library.modifiers.modules.combat.MobEffectModule;
+import slimeknights.tconstruct.library.modifiers.util.ModifierLevelDisplay;
+import slimeknights.tconstruct.library.recipe.casting.material.MaterialFluidRecipe;
+import slimeknights.tconstruct.library.recipe.material.MaterialRecipe;
+import slimeknights.tconstruct.library.recipe.melting.MaterialMeltingRecipe;
+import slimeknights.tconstruct.library.recipe.modifiers.adding.ModifierRecipe;
+import slimeknights.mantle.recipe.helper.LoadableRecipeSerializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,14 +51,36 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Generated data must load in Tinkers' Construct. These tests run inside a loaded game (FML JUnit),
- * so the JSON is checked with Tinkers' own modifier loader and the vanilla recipe codecs.
+ * Generated data must load in Tinkers' Construct. This ordinary JUnit fixture bootstraps vanilla
+ * and registers the official loaders used by generated content. It parses modifier JSON and
+ * round trips recipes through Tinkers' 1.20.1 serializers without starting a client.
  */
 class DataGeneratorTest {
   private static final String NS = "testmats";
   private Workspace workspace;
   private final List<Problem> problems = new ArrayList<>();
   private Map<String,String> files;
+
+  @BeforeAll
+  static void initializeLoaders() {
+    SharedConstants.tryDetectVersion();
+    Bootstrap.bootStrap();
+    CraftingHelper.register(ModLoadedCondition.Serializer.INSTANCE);
+    CraftingHelper.register(NotCondition.Serializer.INSTANCE);
+    CraftingHelper.register(new ResourceLocation("minecraft", "item"), VanillaIngredientSerializer.INSTANCE);
+    CraftingHelper.register(new ResourceLocation("forge", "difference"), DifferenceIngredient.Serializer.INSTANCE);
+    ModifierLevelDisplay.LOADER.register(new ResourceLocation("tconstruct", "default"), ModifierLevelDisplay.DEFAULT.getLoader());
+    ModifierLevelDisplay.LOADER.register(new ResourceLocation("tconstruct", "single_level"), ModifierLevelDisplay.SINGLE_LEVEL.getLoader());
+    ModifierLevelDisplay.LOADER.register(new ResourceLocation("tconstruct", "no_levels"), ModifierLevelDisplay.NO_LEVELS.getLoader());
+    ModifierLevelDisplay.LOADER.register(new ResourceLocation("tconstruct", "pluses"), ModifierLevelDisplay.PLUSES.getLoader());
+    ModifierModule.LOADER.register(new ResourceLocation("tconstruct", "stat_boost"), StatBoostModule.LOADER);
+    ModifierModule.LOADER.register(new ResourceLocation("tconstruct", "attribute"), AttributeModule.LOADER);
+    ModifierModule.LOADER.register(new ResourceLocation("tconstruct", "modifier_slot"), ModifierSlotModule.LOADER);
+    ModifierModule.LOADER.register(new ResourceLocation("tconstruct", "weapon_mob_effect"), MobEffectModule.Weapon.LOADER);
+    ModifierModule.LOADER.register(new ResourceLocation("tconstruct", "counter_mob_effect"), MobEffectModule.ArmorCounter.LOADER);
+    ModifierModule.LOADER.register(new ResourceLocation("tconstruct", "tool_usage_mob_effect"), MobEffectModule.ToolUsage.LOADER);
+    ModifierModule.LOADER.register(new ResourceLocation("tconstruct", "armor_attack_mob_effect"), MobEffectModule.ArmorAttack.LOADER);
+  }
 
   @BeforeEach
   void setUp() {
@@ -87,7 +122,7 @@ class DataGeneratorTest {
 
     MaterialDoc molten = new MaterialDoc();
     molten.id = NS + ":molten";
-    molten.items.add(new MaterialDoc.ItemRef("#c:ingots/copper", 1, 1));
+    molten.items.add(new MaterialDoc.ItemRef("#forge:ingots/copper", 1, 1));
     molten.fluid.enabled = true;
     molten.fluid.fluid = "minecraft:lava";
     molten.fluid.amount = 90;
@@ -100,7 +135,7 @@ class DataGeneratorTest {
     strict.slot(2).ingredient = "minecraft:redstone";
     strict.slot(2).count = 2;
     strict.allowTools = new ArrayList<>(List.of("#tconstruct:modifiable/melee"));
-    strict.denyTools = new ArrayList<>(List.of("tconstruct:dagger"));
+    strict.denyTools = new ArrayList<>(List.of("minecraft:wooden_sword"));
     strict.maxLevel = 3;
     workspace.upgrades.add(strict);
 
@@ -108,7 +143,7 @@ class DataGeneratorTest {
     loose.id = NS + ":loose";
     loose.modifier = NS + ":sharp";
     loose.strictSlots = false;
-    loose.slot(1).ingredient = "#c:gems";
+    loose.slot(1).ingredient = "#forge:gems";
     workspace.upgrades.add(loose);
 
     UpgradeDoc broken = new UpgradeDoc();
@@ -142,22 +177,38 @@ class DataGeneratorTest {
 
   /** Parses a modifier with Tinkers' own loader, the same one the modifier manager uses */
   private static Modifier parseModifier(String id, JsonObject json) {
-    return ComposableModifier.LOADER.deserialize(json, ModifierManager.contextBuilder(ResourceLocation.parse(id)).build());
+    return ComposableModifier.LOADER.deserialize(json, ModifierManager.contextBuilder(new ResourceLocation(id)).build());
   }
 
-  /** Checks NeoForge conditions, parses with the vanilla recipe codec and encodes for the recipe sync packet */
+  /** Parses condition IDs and round trips the recipe through its serializer and sync buffer. */
+  @SuppressWarnings({"rawtypes", "unchecked"})
   private static Recipe<?> parseRecipe(String id, JsonObject json, boolean expectLoaded) {
     json = json.deepCopy();
-    JsonElement conditions = json.remove("neoforge:conditions");
-    if (conditions != null) {
-      List<ICondition> list = ICondition.LIST_CODEC.parse(JsonOps.INSTANCE, conditions).getOrThrow(JsonParseException::new);
-      assertEquals(expectLoaded, list.stream().allMatch(c -> c.test(ICondition.IContext.EMPTY)), "conditions of " + id);
+    if (json.has("conditions")) {
+      JsonObject condition = json.getAsJsonArray("conditions").get(0).getAsJsonObject();
+      if (expectLoaded) {
+        assertInstanceOf(ModLoadedCondition.class, CraftingHelper.getCondition(condition));
+      } else {
+        assertInstanceOf(NotCondition.class, CraftingHelper.getCondition(condition));
+      }
+      JsonObject loaded = expectLoaded ? condition : condition.getAsJsonObject("value");
+      assertEquals("tcmateditor", loaded.get("modid").getAsString());
+      json.remove("conditions");
     }
-    RegistryAccess access = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
-    Recipe<?> recipe = Recipe.CODEC.parse(RegistryOps.create(JsonOps.INSTANCE, access), json).getOrThrow(JsonParseException::new);
-    RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), access);
+    ResourceLocation recipeId = new ResourceLocation(id);
+    RecipeSerializer serializer = switch (json.get("type").getAsString()) {
+      case "tconstruct:material" -> LoadableRecipeSerializer.of(MaterialRecipe.LOADER);
+      case "tconstruct:material_fluid" -> LoadableRecipeSerializer.of(MaterialFluidRecipe.LOADER);
+      case "tconstruct:material_melting" -> LoadableRecipeSerializer.of(MaterialMeltingRecipe.LOADER);
+      case "tconstruct:modifier" -> LoadableRecipeSerializer.of(ModifierRecipe.LOADER);
+      case UpgradeGenerator.POSITIONAL_TYPE -> LoadableRecipeSerializer.of(PositionalModifierRecipe.LOADER);
+      default -> throw new AssertionError("unexpected recipe type " + json.get("type"));
+    };
+    Recipe<?> recipe = serializer.fromJson(recipeId, json);
+    FriendlyByteBuf buffer = new FriendlyByteBuf(Unpooled.buffer());
     try {
-      RecipeHolder.STREAM_CODEC.encode(buffer, new RecipeHolder<>(ResourceLocation.parse(id), recipe));
+      serializer.toNetwork(buffer, recipe);
+      assertNotNull(serializer.fromNetwork(recipeId, buffer), "network round trip of " + id);
     } finally {
       buffer.release();
     }
@@ -172,17 +223,17 @@ class DataGeneratorTest {
     assertEquals(1, file(base + "definition/ruby.json").get("tier").getAsInt(), "default tier");
     assertEquals(300, file(base + "stats/ruby.json").getAsJsonObject("stats").getAsJsonObject("tconstruct:head").get("durability").getAsInt());
     // the unknown item is skipped, the valid one keeps index 0
-    assertTrue(files.containsKey("data/" + NS + "/recipe/tcmateditor/ruby/item_0.json"));
-    assertFalse(files.containsKey("data/" + NS + "/recipe/tcmateditor/ruby/item_1.json"));
+    assertTrue(files.containsKey("data/" + NS + "/recipes/tcmateditor/ruby/item_0.json"));
+    assertFalse(files.containsKey("data/" + NS + "/recipes/tcmateditor/ruby/item_1.json"));
     assertTrue(hasProblem("unknown_item", "minecraft:not_an_item"));
     // an item ID in the fluid field must not produce broken casting recipes
-    assertFalse(files.containsKey("data/" + NS + "/recipe/tcmateditor/ruby/casting.json"));
+    assertFalse(files.containsKey("data/" + NS + "/recipes/tcmateditor/ruby/casting.json"));
     assertTrue(hasProblem("unknown_fluid", "minecraft:diamond"));
   }
 
   @Test
   void materialRecipesLoad() {
-    String base = "data/" + NS + "/recipe/tcmateditor/";
+    String base = "data/" + NS + "/recipes/tcmateditor/";
     parseRecipe(NS + ":ruby_item", file(base + "ruby/item_0.json"), true);
     parseRecipe(NS + ":molten_item", file(base + "molten/item_0.json"), true);
     parseRecipe(NS + ":molten_casting", file(base + "molten/casting.json"), true);
@@ -192,7 +243,7 @@ class DataGeneratorTest {
   @Test
   void materialSlotsBecomeHiddenTrait() {
     JsonObject slots = file("data/" + NS + "/tinkering/modifiers/ruby_slots.json");
-    assertEquals("tinker_station", slots.get("tooltip_display").getAsString());
+    assertEquals("bonus_slot", slots.get("show_in_tooltips").getAsString());
     JsonArray modules = slots.getAsJsonArray("modules");
     assertEquals(2, modules.size());
     for (JsonElement module : modules) {
@@ -237,6 +288,7 @@ class DataGeneratorTest {
       "tconstruct:counter_mob_effect", "tconstruct:tool_usage_mob_effect", "tconstruct:armor_attack_mob_effect"), types);
     assertTrue(hasProblem("unknown_stat", "tconstruct:not_a_stat"));
     assertTrue(hasProblem("unknown_effect", "minecraft:not_an_effect"));
+    assertEquals("multiply_total", json.getAsJsonArray("modules").get(1).getAsJsonObject().get("operation").getAsString());
     // every module must be accepted by Tinkers', one bad module would drop the whole modifier
     Modifier modifier = parseModifier(NS + ":sharp", json);
     assertInstanceOf(ComposableModifier.class, modifier);
@@ -256,12 +308,12 @@ class DataGeneratorTest {
 
   @Test
   void strictUpgradeHasFallback() {
-    String base = "data/" + NS + "/recipe/tcmateditor/upgrade/";
+    String base = "data/" + NS + "/recipes/tcmateditor/upgrade/";
     JsonObject strict = file(base + "sharp.json");
     assertEquals(UpgradeGenerator.POSITIONAL_TYPE, strict.get("type").getAsString());
     // slot 1 is anvil input 2, slot 3 is input 4
     assertEquals("[2,4]", strict.getAsJsonArray("positions").toString());
-    assertEquals("neoforge:difference", strict.getAsJsonObject("tools").get("type").getAsString());
+    assertEquals("forge:difference", strict.getAsJsonObject("tools").get("type").getAsString());
     assertEquals(2, strict.getAsJsonArray("inputs").get(1).getAsJsonObject().get("amount_needed").getAsInt());
     // with this mod loaded the strict recipe is used and the any order fallback is skipped
     assertInstanceOf(PositionalModifierRecipe.class, parseRecipe(NS + ":sharp", strict, true));
@@ -272,10 +324,10 @@ class DataGeneratorTest {
 
   @Test
   void looseUpgradeIsPlainTinkers() {
-    String base = "data/" + NS + "/recipe/tcmateditor/upgrade/";
+    String base = "data/" + NS + "/recipes/tcmateditor/upgrade/";
     JsonObject loose = file(base + "loose.json");
     assertEquals("tconstruct:modifier", loose.get("type").getAsString());
-    assertFalse(loose.has("neoforge:conditions"));
+    assertFalse(loose.has("conditions"));
     assertFalse(files.containsKey(base + "loose_any_order.json"));
     parseRecipe(NS + ":loose", loose, true);
   }

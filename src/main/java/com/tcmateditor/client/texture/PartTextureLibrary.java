@@ -72,7 +72,7 @@ public final class PartTextureLibrary {
   private static List<PartInfo> loadParts(ResourceManager manager) {
     Map<ResourceLocation,PartInfo> map = new LinkedHashMap<>();
     for (String namespace : manager.getNamespaces()) {
-      ResourceLocation location = ResourceLocation.fromNamespaceAndPath(namespace, GENERATOR_FILE);
+      ResourceLocation location = new ResourceLocation(namespace, GENERATOR_FILE);
       List<Resource> stack = manager.getResourceStack(location);
       // top pack first, stop at "replace" like Tinkers' does
       for (int i = stack.size() - 1; i >= 0; i--) {
@@ -134,7 +134,7 @@ public final class PartTextureLibrary {
   @Nullable
   public static Sprite base(ResourceLocation path, String style) {
     if (style != null && !style.isEmpty()) {
-      Sprite styled = sprite(path.withSuffix("_" + style));
+      Sprite styled = sprite(path.withPath(path.getPath() + "_" + style));
       if (styled != null) {
         return styled;
       }

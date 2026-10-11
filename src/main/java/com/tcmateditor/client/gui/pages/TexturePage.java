@@ -257,6 +257,6 @@ public class TexturePage implements Page {
       return Component.literal("★ " + key.substring(5));
     }
     int slash = key.lastIndexOf('/');
-    return Component.literal(slash >= 0 ? key.substring(slash + 1) : key).append(Component.literal("  " + key.substring(0, key.indexOf(':'))).withColor(Theme.TEXT_FAINT));
+    return Component.literal(slash >= 0 ? key.substring(slash + 1) : key).append(Component.literal("  " + key.substring(0, key.indexOf(':'))).withStyle(style -> style.withColor(Theme.TEXT_FAINT)));
   }
 }

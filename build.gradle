@@ -2,116 +2,101 @@ plugins {
     id 'java-library'
     id 'eclipse'
     id 'idea'
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.minecraftforge.gradle' version '6.0.54'
 }
 
 group = 'com.tcmateditor'
 version = "${minecraft_version}-${mod_version}"
 
-base {
-    archivesName = 'TinkersMaterialEditor'
-}
-
+base { archivesName = 'TinkersMaterialEditor' }
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
 }
 
 repositories {
     mavenCentral()
-    // JEI, only used in the dev runs
-    maven { name = 'BlameJared'; url = 'https://maven.blamejared.com' }
-    maven { name = 'DVS1'; url = 'https://dvs1.progwml6.com/files/maven' }
     maven { name = 'NeoForge'; url = 'https://maven.neoforged.net/releases' }
-    maven { name = 'ParchmentMC'; url = 'https://maven.parchmentmc.org' }
+    maven { name = 'DVS1'; url = 'https://dvs1.progwml6.com/files/maven' }
+    maven { name = 'BlameJared'; url = 'https://maven.blamejared.com' }
 }
 
-def tconstructJar = file(findProperty('tconstruct_jar') ?: "../TinkersConstruct-1.21.1/build/libs/TinkersConstruct-${minecraft_version}-${tconstruct_version}.jar")
-def mantleJar = file(findProperty('mantle_jar') ?: "../Mantle-1.21.1/build/libs/Mantle-${minecraft_version}-${mantle_version}.jar")
-
-if (!tconstructJar.isFile()) {
-    throw new GradleException("Tinkers Construct development JAR not found: ${tconstructJar}. Build TinkersConstruct-1.21.1 first or set -Ptconstruct_jar=<path>.")
-}
-if (!mantleJar.isFile()) {
-    throw new GradleException("Mantle development JAR not found: ${mantleJar}. Build Mantle-1.21.1 first or set -Pmantle_jar=<path>.")
-}
-
-neoForge {
-    version = project.neo_version
-    parchment {
-        minecraftVersion = project.parchment_minecraft_version
-        mappingsVersion = project.parchment_version
-    }
-
+// NeoForge 1.20.1 uses Forge's packages, FML metadata and SRG mappings.
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+    copyIdeResources = true
     runs {
+        configureEach {
+            workingDirectory project.file('run-neoforge-1.20.1')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'info'
+            mods { tcmateditor { source sourceSets.main } }
+        }
         client {
-            client()
-            // optional: -PquickPlay=<world folder> loads straight into a singleplayer world for testing
             if (project.hasProperty('quickPlay')) {
-                programArguments.addAll '--quickPlaySingleplayer', project.property('quickPlay').toString()
+                args '--quickPlaySingleplayer', project.property('quickPlay').toString()
             }
-            // optional: -PselfTest runs the in game self test (see client/dev/SelfTest) and quits
             if (project.hasProperty('selfTest')) {
-                systemProperty 'tcmateditor.selftest', 'true'
-                systemProperty 'tcmateditor.selftest.quit', 'true'
+                property 'tcmateditor.selftest', 'true'
+                property 'tcmateditor.selftest.quit', 'true'
             }
         }
         server {
-            server()
-            programArgument '--nogui'
+            args '--nogui'
         }
-        configureEach {
-            gameDirectory = file('run')
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            logLevel = org.slf4j.event.Level.INFO
+        gameTestServer {
+            workingDirectory project.file('run-neoforge-1.20.1/server-gametest')
+            property 'forge.enabledGameTestNamespaces', mod_id
+            property 'tcmateditor.gametest', 'true'
+            if (project.hasProperty('exportGameTest')) {
+                property 'tcmateditor.exportGameTest', 'true'
+            }
         }
     }
-
-    mods {
-        tcmateditor { sourceSet sourceSets.main }
-    }
-
-    // ./gradlew test runs the unit tests inside a loaded game, so registries and Tinkers' loaders are available
-    unitTest {
-        enable()
-        testedMod = mods.tcmateditor
-    }
-}
-
-configurations {
-    // mods present in the dev runs but not in the built jar or its metadata
-    localRuntime
-    runtimeClasspath.extendsFrom localRuntime
 }
 
 dependencies {
-    implementation files(mantleJar)
-    implementation files(tconstructJar)
-    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
-
+    minecraft "net.neoforged:forge:${minecraft_version}-${neo_version}"
+    implementation fg.deobf("slimeknights.mantle:Mantle:${minecraft_version}-${mantle_version}")
+    implementation fg.deobf("slimeknights.tconstruct:TConstruct:${minecraft_version}-${tconstruct_version}")
+    // Optional development recipe viewer, not bundled with the editor.
+    if (project.hasProperty('withJei')) {
+        runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+    }
     testImplementation "org.junit.jupiter:junit-jupiter-api:${junit_version}"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junit_version}"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher:${junit_platform_version}"
 }
 
-tasks.named('test', Test).configure {
-    useJUnitPlatform()
+tasks.named('test', Test).configure { useJUnitPlatform() }
+
+// A game can exit normally even when a self-test assertion fails.
+tasks.matching { it.name == 'runClient' }.configureEach {
+    if (project.hasProperty('selfTest')) {
+        doFirst {
+            delete file('run-neoforge-1.20.1/tcmateditor/selftest.txt')
+        }
+        doLast {
+            def report = file('run-neoforge-1.20.1/tcmateditor/selftest.txt')
+            if (!report.isFile() || !report.getText('UTF-8').trim().endsWith('ALL PASSED')) {
+                throw new GradleException("Game self-test failed; see ${report} and the client log.")
+            }
+        }
+    }
 }
 
 tasks.named('processResources', ProcessResources).configure {
     def replaceProperties = [
-        version: mod_version,
-        loader_range: loader_range,
-        minecraft_range: minecraft_range,
-        neo_range: neo_range,
-        tconstruct_range: tconstruct_range
+        version: mod_version, loader_range: loader_range,
+        minecraft_range: minecraft_range, forge_range: forge_range,
+        tconstruct_range: tconstruct_range, mantle_range: mantle_range
     ]
     inputs.properties replaceProperties
-    filesMatching('META-INF/neoforge.mods.toml') {
-        expand replaceProperties
-    }
+    filesMatching('META-INF/mods.toml') { expand replaceProperties }
 }
 
 tasks.named('jar', Jar).configure {
+    exclude 'com/tcmateditor/dev/**'
     manifest {
         attributes([
             'Specification-Title': "Tinkers' Material Editor",
@@ -120,9 +105,10 @@ tasks.named('jar', Jar).configure {
             'Implementation-Version': project.version
         ])
     }
+    finalizedBy 'reobfJar'
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = 17
 }

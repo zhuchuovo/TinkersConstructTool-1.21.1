@@ -47,7 +47,7 @@ public final class EntryGenerator {
     JsonObject json = new JsonObject();
     String display = LEVEL_DISPLAYS.contains(doc.levelDisplay) ? doc.levelDisplay : "default";
     json.addProperty("level_display", "tconstruct:" + display);
-    json.addProperty("tooltip_display", "always");
+    json.addProperty("show_in_tooltips", "always");
     JsonArray modules = new JsonArray();
     int index = 0;
     for (EntryDoc.Line line : doc.lines) {
@@ -76,7 +76,7 @@ public final class EntryGenerator {
       return null;
     }
     // an unknown stat or attribute makes the whole modifier fail to load
-    ResourceLocation target = ResourceLocation.parse(GenUtil.fullId(line.target));
+    ResourceLocation target = new ResourceLocation(GenUtil.fullId(line.target));
     boolean known = line.isAttribute() ? BuiltInRegistries.ATTRIBUTE.containsKey(target) : ToolStats.getToolStat(new ToolStatId(target)) != null;
     if (!known) {
       problems.add(new Problem(doc.id, line.isAttribute() ? "unknown_attribute" : "unknown_stat", target.toString()));
@@ -96,13 +96,14 @@ public final class EntryGenerator {
       module.addProperty("type", "tconstruct:attribute");
       module.addProperty("unique", doc.namespace() + ".modifier." + doc.path().replace('/', '.') + ".line" + index);
       module.addProperty("attribute", target.toString());
-      module.addProperty("operation", ATTRIBUTE_OPS.contains(line.op) ? line.op : "add_value");
+      String operation = attributeOperation(line.op);
+      module.addProperty("operation", operation);
       module.addProperty("flat", line.flat);
       module.addProperty("each_level", line.perLevel);
       JsonArray slotArray = new JsonArray();
       slots.forEach(slotArray::add);
       module.add("slots", slotArray);
-      if (!"add_value".equals(line.op)) {
+      if (!"addition".equals(operation)) {
         module.addProperty("tooltip_style", "percent");
       }
     } else {
@@ -113,6 +114,15 @@ public final class EntryGenerator {
       module.addProperty("each_level", line.perLevel);
     }
     return module;
+  }
+
+  /** The editor uses the same labels across versions; 1.20.1 attributes use these enum names. */
+  private static String attributeOperation(String operation) {
+    return switch (operation) {
+      case "add_multiplied_base", "multiply_base" -> "multiply_base";
+      case "add_multiplied_total", "multiply_total" -> "multiply_total";
+      default -> "addition";
+    };
   }
 
   /** Tinkers' modifier slot module: flat + eachLevel * level slots of the given type */

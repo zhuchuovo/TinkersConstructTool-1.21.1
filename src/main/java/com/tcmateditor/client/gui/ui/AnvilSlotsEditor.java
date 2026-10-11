@@ -62,7 +62,7 @@ public class AnvilSlotsEditor extends UIElement {
   }
 
   public static ResourceLocation icon(String name) {
-    return ResourceLocation.fromNamespaceAndPath("tconstruct", "textures/gui/tinker_pattern/" + name + ".png");
+    return new ResourceLocation("tconstruct", "textures/gui/tinker_pattern/" + name + ".png");
   }
 
   /** Name of the slot, e.g. "1 · Lapis (top)" */
@@ -153,10 +153,10 @@ public class AnvilSlotsEditor extends UIElement {
     UpgradeDoc.SlotInput input = doc.get().slot(slot);
     MutableComponent text = slotName(slot);
     if (!input.isEmpty()) {
-      text.append("\n").append(Component.literal(input.ingredient + (input.count > 1 ? " ×" + input.count : "")).withColor(Theme.TEXT_DIM));
+      text.append("\n").append(Component.literal(input.ingredient + (input.count > 1 ? " ×" + input.count : "")).withStyle(style -> style.withColor(Theme.TEXT_DIM)));
     }
     if (!AnvilSlots.onStation(slot)) {
-      text.append("\n").append(Names.tr("hint.anvil_only").withColor(Theme.WARNING));
+      text.append("\n").append(Names.tr("hint.anvil_only").withStyle(style -> style.withColor(Theme.WARNING)));
     }
     return text;
   }

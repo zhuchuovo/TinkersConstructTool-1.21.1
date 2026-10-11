@@ -21,7 +21,7 @@ public final class PreviewCache {
   public record Preview(String key, Component name, List<ResourceLocation> layers) {}
 
   private static ResourceLocation tc(String path) {
-    return ResourceLocation.fromNamespaceAndPath("tconstruct", path);
+    return new ResourceLocation("tconstruct", path);
   }
 
   public static final List<Preview> PREVIEWS = List.of(

@@ -20,11 +20,10 @@ public class TextField extends UIElement {
     this.h = 16;
     box = new EditBox(Theme.font(), 0, 0, width - 8, 9, Component.empty());
     box.setBordered(false);
-    box.setTextShadow(false);
     box.setMaxLength(1024);
     box.setTextColor(Theme.TEXT);
     box.setValue(value == null ? "" : value);
-    box.moveCursorToStart(false);
+    box.moveCursorToStart();
     box.setResponder(text -> {
       if (!suppress) {
         onChange.accept(text);
@@ -66,7 +65,7 @@ public class TextField extends UIElement {
     if (!box.getValue().equals(value)) {
       suppress = true;
       box.setValue(value);
-      box.moveCursorToStart(false);
+      box.moveCursorToStart();
       suppress = false;
     }
   }
@@ -88,7 +87,15 @@ public class TextField extends UIElement {
     int border = !isValid() ? Theme.DANGER : focused ? Theme.ACCENT : isHovered(mx, my) ? Theme.BORDER_HOVER : Theme.BORDER;
     Theme.outlined(g, x, y, w, h, Theme.INPUT, border);
     g.enableScissor(x + 2, y, x + w - 2, y + h);
-    box.render(g, mx, my, partialTick);
+    FlatGraphics flat = new FlatGraphics(g);
+    if (UI.clip != null) {
+      flat.enableScissor(UI.clip.left(), UI.clip.top(), UI.clip.right(), UI.clip.bottom());
+    }
+    flat.enableScissor(x + 2, y, x + w - 2, y + h);
+    box.render(flat, mx, my, partialTick);
+    flat.flush();
+    flat.disableScissor();
+    if (UI.clip != null) flat.disableScissor();
     g.disableScissor();
   }
 

@@ -45,7 +45,7 @@ public class StatsPage implements Page {
         continue;
       }
       long enabled = inGroup.stream().filter(i -> doc.stats.containsKey(i.id())).count();
-      form.header(Names.group(group).copy().append(Component.literal(enabled > 0 ? "  " + enabled + "/" + inGroup.size() : "").withColor(Theme.TEXT_FAINT)));
+      form.header(Names.group(group).copy().append(Component.literal(enabled > 0 ? "  " + enabled + "/" + inGroup.size() : "").withStyle(style -> style.withColor(Theme.TEXT_FAINT))));
       for (StatInfo info : inGroup) {
         buildStat(form, info);
       }

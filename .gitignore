@@ -27,4 +27,6 @@ replay_pid*
 # Gradle
 build/
 run/
+run-neoforge-1.20.1/
+logs/
 .gradle/

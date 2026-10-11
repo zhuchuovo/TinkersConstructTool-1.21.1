@@ -1,7 +1,6 @@
 {
   "pack": {
     "description": "Tinkers' Material Editor resources",
-    "pack_format": 48,
-    "supported_formats": [34, 48]
+    "pack_format": 15
   }
 }

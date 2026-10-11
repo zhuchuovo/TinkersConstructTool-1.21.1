@@ -15,7 +15,7 @@ import com.tcmateditor.net.GiveTestPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.tcmateditor.net.EditorNetwork;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -92,7 +92,7 @@ public final class ClientApply {
 
   public static boolean canSendToServer() {
     ClientPacketListener connection = Minecraft.getInstance().getConnection();
-    return connection != null && connection.hasChannel(ApplyDataPayload.TYPE);
+    return connection != null && EditorNetwork.hasChannel(connection.getConnection());
   }
 
   /** Saves the workspace without reloading anything */
@@ -148,7 +148,7 @@ public final class ClientApply {
         List<byte[]> chunks = FilePacking.split(packed, ApplyDataPayload.CHUNK_SIZE);
         session++;
         for (int i = 0; i < chunks.size(); i++) {
-          PacketDistributor.sendToServer(new ApplyDataPayload(session, i, chunks.size(), chunks.get(i)));
+          EditorNetwork.sendToServer(new ApplyDataPayload(session, i, chunks.size(), chunks.get(i)));
         }
         waiting = true;
         lastSentData = dataText;
@@ -213,7 +213,7 @@ public final class ClientApply {
   /** Asks the server for test tools */
   public static void giveTestTools(String materialId) {
     if (canSendToServer()) {
-      PacketDistributor.sendToServer(new GiveTestPayload(materialId));
+      EditorNetwork.sendToServer(new GiveTestPayload(materialId));
     } else {
       EditorSession.setStatus(Component.translatable("tcmateditor.status.no_server"), Theme.WARNING);
     }

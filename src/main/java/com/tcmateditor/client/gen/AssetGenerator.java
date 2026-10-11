@@ -221,7 +221,7 @@ public final class AssetGenerator {
         TCMatEditor.LOG.error("Failed to render {} for {}", part.path(), doc.id, e);
         continue;
       }
-      ResourceLocation out = part.path().withSuffix("_" + suffix);
+      ResourceLocation out = part.path().withPath(part.path().getPath() + "_" + suffix);
       String file = "assets/" + out.getNamespace() + "/textures/" + out.getPath() + ".png";
       try {
         files.put(file, png(result));

@@ -86,7 +86,7 @@ public class GeneralPage implements Page {
         Page.changed();
       })).size(18, 16), 0).tooltip(Names.tr("hint.pick_item"));
       field[0] = form.place(new TextField(item.ingredient, fieldW), 20);
-      field[0].hint(Component.literal("minecraft:diamond / #c:gems"));
+      field[0].hint(Component.literal("minecraft:diamond / #forge:gems"));
       field[0].validator(GenUtil::isKnownItem);
       field[0].onChange(text -> { item.ingredient = text.trim(); Page.changed(); });
       form.place(new NumberField(item.value, true, 1, 10000, 1, numberW).onValue(v -> { item.value = (int) v; Page.changed(); }), 24 + fieldW);

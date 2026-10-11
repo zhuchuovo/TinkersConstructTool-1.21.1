@@ -125,7 +125,7 @@ public class EditorScreen extends Screen {
 
   private void buildTopBar() {
     int x = winX + 8;
-    Component titleText = Component.literal("◆ ").withColor(Theme.ACCENT).append(Component.translatable("tcmateditor.title").withColor(Theme.TEXT));
+    Component titleText = Component.literal("◆ ").withStyle(style -> style.withColor(Theme.ACCENT)).append(Component.translatable("tcmateditor.title").withStyle(style -> style.withColor(Theme.TEXT)));
     root.add(new Label(titleText, Theme.TEXT)).at(x, winY + 7);
     x += font.width(titleText) + 12;
     for (Mode mode : Mode.values()) {
@@ -593,7 +593,7 @@ public class EditorScreen extends Screen {
   }
 
   @Override
-  public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+  public void renderBackground(GuiGraphics g) {
     g.fill(0, 0, width, height, Theme.DIM);
   }
 
@@ -602,7 +602,7 @@ public class EditorScreen extends Screen {
     if (UI.consumeRebuild()) {
       rebuild();
     }
-    renderBackground(g, mouseX, mouseY, partialTick);
+    renderBackground(g);
     // window
     Theme.box(g, winX, winY, winW, winH, Theme.WINDOW);
     g.fill(winX, winY + TOP_H - 1, winX + winW, winY + TOP_H, Theme.BORDER);
@@ -657,10 +657,10 @@ public class EditorScreen extends Screen {
       }
     }
     Component right = assetsDirty
-      ? Names.tr("status.assets_pending").withColor(Theme.WARNING)
+      ? Names.tr("status.assets_pending").withStyle(style -> style.withColor(Theme.WARNING))
       : !EditorSession.autoApply && ClientApply.hasUnappliedEdits()
-      ? Names.tr("status.data_pending").withColor(Theme.WARNING)
-      : Names.tr("status.shortcuts").withColor(Theme.TEXT_FAINT);
+      ? Names.tr("status.data_pending").withStyle(style -> style.withColor(Theme.WARNING))
+      : Names.tr("status.shortcuts").withStyle(style -> style.withColor(Theme.TEXT_FAINT));
     int rw = font.width(right);
     Theme.text(g, right, winX + winW - rw - 8, y, Theme.TEXT_FAINT);
   }
@@ -706,12 +706,12 @@ public class EditorScreen extends Screen {
   }
 
   @Override
-  public boolean mouseScrolled(double mx, double my, double sx, double sy) {
+  public boolean mouseScrolled(double mx, double my, double sy) {
     if (!UI.POPUPS.isEmpty()) {
       Popup top = UI.POPUPS.get(UI.POPUPS.size() - 1);
-      return top.isHovered(mx, my) && top.mouseScrolled(mx, my, sx, sy);
+      return top.isHovered(mx, my) && top.mouseScrolled(mx, my, 0, sy);
     }
-    return root.mouseScrolled(mx, my, sx, sy);
+    return root.mouseScrolled(mx, my, 0, sy);
   }
 
   @Override
