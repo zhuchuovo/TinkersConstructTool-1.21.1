@@ -2,6 +2,7 @@ package com.tcmateditor.client.gui.pages;
 
 import com.tcmateditor.client.EditorSession;
 import com.tcmateditor.client.gui.Form;
+import com.tcmateditor.client.gui.Icons;
 import com.tcmateditor.client.gui.Names;
 import com.tcmateditor.client.gui.Pickers;
 import com.tcmateditor.client.gui.Theme;
@@ -14,7 +15,8 @@ import com.tcmateditor.client.gui.ui.Label;
 import com.tcmateditor.client.gui.ui.NumberField;
 import com.tcmateditor.client.gui.ui.TextField;
 import com.tcmateditor.client.gui.ui.Toggle;
-import com.tcmateditor.gen.DataGenerator;
+import com.tcmateditor.gen.GenUtil;
+import com.tcmateditor.gen.UpgradeGenerator;
 import com.tcmateditor.model.AnvilSlots;
 import com.tcmateditor.model.UpgradeDoc;
 import com.tcmateditor.model.Workspace;
@@ -86,14 +88,14 @@ public class UpgradeRecipePage implements Page {
     form.view.add(new Label(AnvilSlotsEditor.slotName(selectedSlot), Theme.TEXT)).at(form.pad + panelX, panelY + 2);
     int rowY = panelY + 16;
     TextField[] field = new TextField[1];
-    form.view.add(new ItemIcon(() -> GeneralPage.iconFor(input.ingredient)).onClick(() -> Pickers.item(picked -> {
+    form.view.add(new ItemIcon(() -> Icons.forRef(input.ingredient)).onClick(() -> Pickers.item(picked -> {
       input.ingredient = picked;
       field[0].setValue(picked);
       Page.changed();
     })).size(18, 16)).at(form.pad + panelX, rowY).tooltip(Names.tr("hint.pick_item"));
     field[0] = new TextField(input.ingredient, Math.max(60, panelW - 22));
     field[0].hint(Component.literal("minecraft:diamond / #c:gems"));
-    field[0].validator(text -> text.isBlank() || DataGenerator.isValidRef(text));
+    field[0].validator(text -> text.isBlank() || GenUtil.isKnownItem(text));
     field[0].onChange(text -> {
       input.ingredient = text.trim();
       Page.changed();
@@ -125,7 +127,7 @@ public class UpgradeRecipePage implements Page {
 
     // rules
     form.header(Names.tr("section.upgrade_rules"));
-    form.row(Names.tr("label.slot_type"), new Dropdown<>(DataGenerator.SLOT_TYPES, t -> Names.tr("slot_type." + t), () -> doc.slotType, t -> {
+    form.row(Names.tr("label.slot_type"), new Dropdown<>(UpgradeGenerator.SLOT_TYPES, t -> Names.tr("slot_type." + t), () -> doc.slotType, t -> {
       doc.slotType = t;
       Page.rebuild();
     }, 110)).tooltip(Names.tr("hint.slot_type"));

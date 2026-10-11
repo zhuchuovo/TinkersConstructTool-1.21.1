@@ -20,18 +20,27 @@ public class EntryDoc {
   public LinkedHashMap<String,LangText> lang = new LinkedHashMap<>();
 
   public static class Line {
-    /** stat or attribute */
+    /** stat, attribute, slot or effect */
     public String kind = "stat";
-    /** Tool stat ID or attribute ID */
+    /** Tool stat ID, attribute ID, modifier slot type (upgrades, abilities, defense, souls) or mob effect ID */
     public String target = "tconstruct:attack_damage";
-    /** Stat: add, percent, multiply_base, multiply_conditional, multiply_all. Attribute: add_value, add_multiplied_base, add_multiplied_total */
+    /**
+     * Stat: add, percent, multiply_base, multiply_conditional, multiply_all. Attribute: add_value, add_multiplied_base, add_multiplied_total.
+     * Effect: when it applies, weapon, counter, armor_attack or self.
+     */
     public String op = "add";
-    /** Value at every level */
+    /** Value at every level, slot lines use whole numbers, effect lines use it for the effect level */
     public float flat = 0f;
     /** Additional value per modifier level */
     public float perLevel = 1f;
     /** Equipment slots for attributes */
     public List<String> slots = new ArrayList<>(List.of("mainhand"));
+    /** Effect duration in seconds, at every level and per level */
+    public float seconds = 5f;
+    public float secondsPerLevel = 0f;
+    /** Chance for the effect in percent, at every level and per level */
+    public float chance = 100f;
+    public float chancePerLevel = 0f;
 
     public Line copy() {
       Line line = new Line();
@@ -41,11 +50,25 @@ public class EntryDoc {
       line.flat = flat;
       line.perLevel = perLevel;
       line.slots = new ArrayList<>(slots);
+      line.seconds = seconds;
+      line.secondsPerLevel = secondsPerLevel;
+      line.chance = chance;
+      line.chancePerLevel = chancePerLevel;
       return line;
     }
 
     public boolean isAttribute() {
       return "attribute".equals(kind);
+    }
+
+    /** Adds or removes modifier slots */
+    public boolean isSlot() {
+      return "slot".equals(kind);
+    }
+
+    /** Applies a mob (potion) effect */
+    public boolean isEffect() {
+      return "effect".equals(kind);
     }
   }
 
@@ -100,6 +123,7 @@ public class EntryDoc {
       if (line.kind == null) line.kind = "stat";
       if (line.target == null) line.target = "";
       if (line.op == null) line.op = line.isAttribute() ? "add_value" : "add";
+      if (line.isEffect() && !List.of("weapon", "counter", "armor_attack", "self").contains(line.op)) line.op = "weapon";
     }
     if (lang == null) lang = new LinkedHashMap<>();
     lang.values().removeIf(v -> v == null);

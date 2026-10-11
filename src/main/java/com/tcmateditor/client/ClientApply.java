@@ -3,8 +3,10 @@ package com.tcmateditor.client;
 import com.tcmateditor.EditorPaths;
 import com.tcmateditor.TCMatEditor;
 import com.tcmateditor.client.gen.AssetGenerator;
+import com.tcmateditor.client.gui.Dialogs;
 import com.tcmateditor.client.gui.Theme;
 import com.tcmateditor.gen.DataGenerator;
+import com.tcmateditor.gen.DataGenerator.Problem;
 import com.tcmateditor.model.Workspace;
 import com.tcmateditor.net.ApplyDataPayload;
 import com.tcmateditor.net.ApplyResultPayload;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +43,8 @@ public final class ClientApply {
   private static long lastEdit = 0;
   private static String lastSentData = null;
   private static String appliedAssets = null;
+  /** Content left out of the last apply because the game would reject it */
+  private static List<Problem> lastProblems = List.of();
 
   /** Call after any edit */
   public static void markEdited() {
@@ -49,6 +54,11 @@ public final class ClientApply {
 
   public static boolean isWaiting() {
     return waiting;
+  }
+
+  /** True if there are edits that were not applied yet */
+  public static boolean hasUnappliedEdits() {
+    return dataDirty;
   }
 
   /** True if visual changes are waiting for a full apply */
@@ -85,6 +95,17 @@ public final class ClientApply {
     return connection != null && connection.hasChannel(ApplyDataPayload.TYPE);
   }
 
+  /** Saves the workspace without reloading anything */
+  public static void save() {
+    try {
+      EditorSession.workspace().save();
+      EditorSession.setStatus(Component.translatable("tcmateditor.status.saved_only"), Theme.SUCCESS);
+    } catch (IOException e) {
+      TCMatEditor.LOG.error("Failed to save workspace", e);
+      EditorSession.setStatus(Component.translatable("tcmateditor.status.error", e.getMessage()), Theme.DANGER);
+    }
+  }
+
   /**
    * Saves and applies the workspace
    * @param withAssets  If true, also regenerates textures/texts and reloads resources when they changed
@@ -116,7 +137,9 @@ public final class ClientApply {
       }
     }
 
-    Map<String,String> data = DataGenerator.generate(workspace);
+    List<Problem> problems = new ArrayList<>();
+    Map<String,String> data = DataGenerator.generate(workspace, problems);
+    lastProblems = problems;
     String dataText = data.toString();
     boolean sendData = withAssets || !dataText.equals(lastSentData);
     if (sendData && canSendToServer()) {
@@ -155,7 +178,9 @@ public final class ClientApply {
       return;
     }
     waiting = false;
-    if (payload.success()) {
+    if (payload.success() && !lastProblems.isEmpty()) {
+      EditorSession.setStatus(Component.translatable("tcmateditor.status.applied_with_problems", payload.detail(), lastProblems.size(), Dialogs.problemText(lastProblems.get(0))), Theme.WARNING);
+    } else if (payload.success()) {
       EditorSession.setStatus(Component.translatable(payload.messageKey(), payload.detail(), String.format("%.1f", payload.millis() / 1000f)), Theme.SUCCESS);
     } else {
       lastSentData = null;

@@ -48,6 +48,12 @@
       "mining_speed": 0.0,
       "melee_speed": 0.0,
       "melee_damage": 0.0
+    },
+    "tconstruct:head": {
+      "durability": 280,
+      "mining_speed": 6.0,
+      "mining_tier": "minecraft:diamond",
+      "melee_attack": 2.5
     }
   },
   "defaultTraits": [
@@ -59,6 +65,7 @@
   "statTraits": {
     "tconstruct:melee_harvest": []
   },
+  "slots": {},
   "items": [
     {
       "ingredient": "minecraft:redstone_block",
@@ -138,7 +145,7 @@
   },
   "lang": {
     "zh_cn": {
-      "name": "红宝石",
+      "name": "红石",
       "flavor": "闪耀而锋利",
       "desc": "带有锋锐词条的宝石材料。"
     },

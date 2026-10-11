@@ -4,6 +4,7 @@ import com.tcmateditor.client.ClientApply;
 import com.tcmateditor.client.EditorSession;
 import com.tcmateditor.client.gen.AssetGenerator;
 import com.tcmateditor.client.gui.Form;
+import com.tcmateditor.client.gui.Icons;
 import com.tcmateditor.client.gui.Names;
 import com.tcmateditor.client.gui.Pickers;
 import com.tcmateditor.client.gui.Theme;
@@ -13,16 +14,14 @@ import com.tcmateditor.client.gui.ui.Label;
 import com.tcmateditor.client.gui.ui.NumberField;
 import com.tcmateditor.client.gui.ui.TextField;
 import com.tcmateditor.client.gui.ui.Toggle;
+import com.tcmateditor.gen.GenUtil;
 import com.tcmateditor.model.MaterialDoc;
 import com.tcmateditor.model.MaterialDoc.ItemRef;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import slimeknights.tconstruct.library.materials.MaterialRegistry;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialId;
@@ -81,13 +80,14 @@ public class GeneralPage implements Page {
     }
     for (ItemRef item : new ArrayList<>(doc.items)) {
       TextField[] field = new TextField[1];
-      form.place(new ItemIcon(() -> iconFor(item.ingredient)).onClick(() -> Pickers.item(picked -> {
+      form.place(new ItemIcon(() -> Icons.forRef(item.ingredient)).onClick(() -> Pickers.item(picked -> {
         item.ingredient = picked;
         field[0].setValue(picked);
         Page.changed();
       })).size(18, 16), 0).tooltip(Names.tr("hint.pick_item"));
       field[0] = form.place(new TextField(item.ingredient, fieldW), 20);
       field[0].hint(Component.literal("minecraft:diamond / #c:gems"));
+      field[0].validator(GenUtil::isKnownItem);
       field[0].onChange(text -> { item.ingredient = text.trim(); Page.changed(); });
       form.place(new NumberField(item.value, true, 1, 10000, 1, numberW).onValue(v -> { item.value = (int) v; Page.changed(); }), 24 + fieldW);
       form.place(new NumberField(item.needed, true, 1, 10000, 1, numberW).onValue(v -> { item.needed = (int) v; Page.changed(); }), 28 + fieldW + numberW);
@@ -116,6 +116,8 @@ public class GeneralPage implements Page {
       TextField[] fluidField = new TextField[1];
       fluidField[0] = form.row(Names.tr("label.fluid"), new TextField(doc.fluid.fluid, form.controlWidth() - 20));
       fluidField[0].hint(Component.literal("tconstruct:molten_iron"));
+      fluidField[0].validator(text -> text.isBlank() || GenUtil.isKnownFluid(text));
+      fluidField[0].tooltip(Names.tr("hint.fluid_id"));
       fluidField[0].onChange(text -> { doc.fluid.fluid = text.trim(); Page.changed(); });
       form.view.add(new Button(Component.literal("…"), () -> Pickers.fluid(picked -> {
         doc.fluid.fluid = picked;
@@ -165,26 +167,5 @@ public class GeneralPage implements Page {
 
   private static Supplier<ItemStack> tool(IModifiable item, MaterialId id) {
     return () -> ToolBuildHandler.createSingleMaterial(item, MaterialVariant.of(id, ""));
-  }
-
-  /** Icon for an item ID or tag */
-  public static ItemStack iconFor(String ref) {
-    if (ref == null || ref.isBlank()) {
-      return ItemStack.EMPTY;
-    }
-    if (ref.startsWith("#")) {
-      List<ItemStack> tagged = Pickers.tagItems(ref.substring(1));
-      if (tagged.isEmpty()) {
-        return ItemStack.EMPTY;
-      }
-      return tagged.get((int) ((System.currentTimeMillis() / 1000) % tagged.size()));
-    }
-    ResourceLocation id = ResourceLocation.tryParse(ref);
-    if (id == null) {
-      return ItemStack.EMPTY;
-    }
-    Item item = BuiltInRegistries.ITEM.get(id);
-    // Tinkers' tools need materials to render, use their display version
-    return item == Items.AIR ? ItemStack.EMPTY : slimeknights.tconstruct.library.tools.item.IModifiableDisplay.getDisplayStack(item);
   }
 }

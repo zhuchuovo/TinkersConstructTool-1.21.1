@@ -10,6 +10,7 @@ import com.tcmateditor.client.gui.ui.Label;
 import com.tcmateditor.client.gui.ui.NumberField;
 import com.tcmateditor.client.gui.ui.Toggle;
 import com.tcmateditor.client.gui.ui.UIElement;
+import com.tcmateditor.gen.EntryGenerator;
 import com.tcmateditor.model.MaterialDoc;
 import com.tcmateditor.model.MaterialDoc.TraitRef;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,7 +19,7 @@ import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Traits: modifiers the material gives to tools. Custom entries can be used here. */
+/** Traits: modifiers the material gives to tools, plus modifier slots. Custom entries can be used here. */
 public class TraitsPage implements Page {
   private final MaterialDoc doc;
 
@@ -29,6 +30,31 @@ public class TraitsPage implements Page {
   @Override
   public void build(Form form) {
     form.hint(Names.tr("page.traits.hint"));
+
+    // modifier slots, generated as a hidden trait of this material
+    form.header(Names.tr("section.material_slots"));
+    form.hint(Names.tr("section.material_slots.hint"));
+    int x = 0;
+    for (String type : EntryGenerator.MODIFIER_SLOT_TYPES) {
+      Component label = Names.tr("slot_type." + type);
+      int groupW = Theme.font().width(label) + 4 + 44;
+      if (x > 0 && x + groupW > form.width()) {
+        form.next(16);
+        x = 0;
+      }
+      form.place(new Label(label, Theme.TEXT_DIM), x).at(form.pad + x, form.y + 4);
+      int fieldX = x + Theme.font().width(label) + 4;
+      form.place(new NumberField(doc.slots.getOrDefault(type, 0), true, -10, 10, 1, 40).onValue(v -> {
+        if ((int) v == 0) {
+          doc.slots.remove(type);
+        } else {
+          doc.slots.put(type, (int) v);
+        }
+        Page.changed();
+      }), fieldX).tooltip(Names.tr("hint.material_slots"));
+      x += groupW + 12;
+    }
+    form.next(16);
 
     form.header(Names.tr("section.default_traits"));
     traitList(form, doc.defaultTraits);

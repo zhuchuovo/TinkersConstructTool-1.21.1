@@ -12,12 +12,30 @@
       "melee_attack": 2.0
     },
     "tconstruct:handle": {
-      "durability": -0.85,
+      "durability": 0.25,
       "mining_speed": 0.0,
       "melee_speed": 0.0,
       "melee_damage": 0.0
     },
-    "tconstruct:binding": {}
+    "tconstruct:binding": {},
+    "tconstruct:plating_helmet": {
+      "durability": 165,
+      "armor": 2.0,
+      "toughness": 0.0,
+      "knockback_resistance": 0.0
+    },
+    "tconstruct:plating_chestplate": {
+      "durability": 240,
+      "armor": 5.0,
+      "toughness": 0.0,
+      "knockback_resistance": 0.0
+    },
+    "tconstruct:plating_leggings": {
+      "durability": 225,
+      "armor": 4.0,
+      "toughness": 0.0,
+      "knockback_resistance": 0.0
+    }
   },
   "defaultTraits": [],
   "statTraits": {
@@ -26,6 +44,7 @@
     "tconstruct:armor": [],
     "tconstruct:ammo": []
   },
+  "slots": {},
   "items": [
     {
       "ingredient": "minecraft:bedrock",
@@ -34,7 +53,7 @@
     }
   ],
   "fluid": {
-    "enabled": false,
+    "enabled": true,
     "fluid": "",
     "amount": 90,
     "temperature": 800
@@ -63,7 +82,7 @@
         "color": -15461613
       },
       {
-        "grey": 216,
+        "grey": 214,
         "color": -15066855
       },
       {
@@ -77,7 +96,7 @@
         "region": "all",
         "color": -1,
         "strength": 0.0,
-        "scale": 3,
+        "scale": 1,
         "seed": 0,
         "enabled": true,
         "pattern": ""
@@ -121,7 +140,7 @@
       "strength": 0.5,
       "interpolate": true
     },
-    "luminosity": 6
+    "luminosity": 8
   },
   "lang": {
     "zh_cn": {

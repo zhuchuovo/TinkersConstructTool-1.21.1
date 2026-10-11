@@ -6,6 +6,7 @@ import com.tcmateditor.client.ClientSettings;
 import com.tcmateditor.client.EditorSession;
 import com.tcmateditor.client.EditorSession.Mode;
 import com.tcmateditor.client.Exporter;
+import com.tcmateditor.client.UiLanguage;
 import com.tcmateditor.client.MaterialImporter;
 import com.tcmateditor.client.gui.pages.EntryEffectsPage;
 import com.tcmateditor.client.gui.pages.EntryInfoPage;
@@ -35,7 +36,6 @@ import com.tcmateditor.model.MaterialDoc;
 import com.tcmateditor.model.TextureDoc;
 import com.tcmateditor.model.UpgradeDoc;
 import com.tcmateditor.model.Workspace;
-import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -67,6 +67,8 @@ public class EditorScreen extends Screen {
   @Override
   protected void init() {
     ClientSettings.load();
+    // show the editor in the language chosen in the settings
+    UiLanguage.ensureActive();
     UI.reset();
     PartTextureLibrary.clear();
     PreviewCache.invalidate();
@@ -89,6 +91,7 @@ public class EditorScreen extends Screen {
     }
     SpritePreview.releaseAll();
     UI.reset();
+    UiLanguage.restore();
   }
 
   /* Layout */
@@ -567,8 +570,8 @@ public class EditorScreen extends Screen {
   private void export() {
     try {
       Exporter.Result result = Exporter.export(EditorSession.workspace());
-      EditorSession.setStatus(Names.tr("status.exported", result.folder().getFileName().toString()), Theme.SUCCESS);
-      Util.getPlatform().openFile(result.folder().toFile());
+      EditorSession.setStatus(Names.tr("status.exported", result.folder().getFileName().toString()), result.problems().isEmpty() ? Theme.SUCCESS : Theme.WARNING);
+      Dialogs.exported(result);
     } catch (IOException | RuntimeException e) {
       TCMatEditor.LOG.error("Export failed", e);
       EditorSession.setStatus(Names.tr("status.error", e.getMessage()), Theme.DANGER);
@@ -580,6 +583,10 @@ public class EditorScreen extends Screen {
   @Override
   public void tick() {
     root.tick();
+    // a resource reload puts the game language back
+    if (UiLanguage.ensureActive()) {
+      UI.requestRebuild();
+    }
     if (UI.consumeRebuild()) {
       rebuild();
     }
@@ -651,6 +658,8 @@ public class EditorScreen extends Screen {
     }
     Component right = assetsDirty
       ? Names.tr("status.assets_pending").withColor(Theme.WARNING)
+      : !EditorSession.autoApply && ClientApply.hasUnappliedEdits()
+      ? Names.tr("status.data_pending").withColor(Theme.WARNING)
       : Names.tr("status.shortcuts").withColor(Theme.TEXT_FAINT);
     int rw = font.width(right);
     Theme.text(g, right, winX + winW - rw - 8, y, Theme.TEXT_FAINT);
@@ -720,7 +729,12 @@ public class EditorScreen extends Screen {
       return true;
     }
     if (key == GLFW.GLFW_KEY_S && hasControlDown()) {
-      ClientApply.apply(true);
+      // Ctrl+S saves, Ctrl+Shift+S saves and reloads
+      if (hasShiftDown()) {
+        ClientApply.apply(true);
+      } else {
+        ClientApply.save();
+      }
       return true;
     }
     UIElement focused = UI.focused();

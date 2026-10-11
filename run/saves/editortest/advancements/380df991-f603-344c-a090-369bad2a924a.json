@@ -600,11 +600,16 @@
   },
   "minecraft:adventure/adventuring_time": {
     "criteria": {
+      "minecraft:old_growth_birch_forest": "2026-10-12 01:10:40 +0800",
       "minecraft:snowy_slopes": "2026-07-30 23:28:18 +0800",
       "minecraft:beach": "2026-07-30 23:19:25 +0800",
+      "minecraft:dark_forest": "2026-10-12 01:11:10 +0800",
       "minecraft:forest": "2026-07-30 23:17:03 +0800",
+      "minecraft:river": "2026-10-12 01:09:19 +0800",
       "minecraft:grove": "2026-07-30 23:32:12 +0800",
       "minecraft:meadow": "2026-07-28 19:08:01 +0800",
+      "minecraft:birch_forest": "2026-10-12 01:10:48 +0800",
+      "minecraft:stony_shore": "2026-10-12 01:36:55 +0800",
       "minecraft:plains": "2026-07-30 23:17:27 +0800"
     },
     "done": false

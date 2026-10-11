@@ -4,7 +4,6 @@ import com.tcmateditor.client.EditorSession;
 import com.tcmateditor.client.gui.Form;
 import com.tcmateditor.client.gui.Names;
 import com.tcmateditor.client.gui.Theme;
-import com.tcmateditor.client.gui.ui.Button;
 import com.tcmateditor.client.gui.ui.TextArea;
 import com.tcmateditor.client.gui.ui.TextField;
 import com.tcmateditor.client.gui.ui.UIElement;
@@ -19,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
 
-/** Name, flavor and description editing in the four supported languages */
+/** Name, flavor and description editing, in the editor's UI language (chosen in the settings) */
 public final class LangEditor {
   private LangEditor() {}
 
@@ -28,23 +27,9 @@ public final class LangEditor {
    * @param color      Name color for the preview
    */
   public static void build(Form form, Map<String,LangText> lang, Component descLabel, IntSupplier color) {
-    // language tabs
-    int x = 0;
-    for (String code : Languages.CODES) {
-      LangText text = lang.get(code);
-      boolean filled = text != null && !text.isEmpty();
-      Component label = Component.literal(Languages.LABELS.get(code) + (filled ? " ●" : ""));
-      Button chip = new Button(label, () -> {
-        EditorSession.editLanguage = code;
-        Page.rebuild();
-      }).style(Button.Style.CHIP).selected(() -> code.equals(EditorSession.editLanguage()));
-      form.place(chip, x);
-      x += chip.w + 4;
-    }
-    form.next(16);
-    form.hint(Names.tr("hint.lang_fallback"));
-
     String code = EditorSession.editLanguage();
+    form.hint(Names.tr("hint.editing_language", Languages.LABELS.get(code)));
+
     LangText text = lang.computeIfAbsent(code, c -> new LangText());
     form.row(Names.tr("label.name"), new TextField(text.name, form.controlWidth()).maxLength(64)
       .hint(Component.literal(Languages.resolve(lang, code, t -> t.name)).withColor(Theme.TEXT_FAINT))

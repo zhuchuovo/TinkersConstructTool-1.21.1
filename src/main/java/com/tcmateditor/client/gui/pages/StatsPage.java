@@ -13,7 +13,7 @@ import com.tcmateditor.client.gui.ui.NumberField;
 import com.tcmateditor.client.gui.ui.TextField;
 import com.tcmateditor.client.gui.ui.Toggle;
 import com.tcmateditor.client.gui.ui.UIElement;
-import com.tcmateditor.gen.DataGenerator;
+import com.tcmateditor.gen.GenUtil;
 import com.tcmateditor.model.MaterialDoc;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -105,25 +105,25 @@ public class StatsPage implements Page {
   private UIElement control(JsonObject json, Field field, int width) {
     String key = field.key();
     return switch (field.kind()) {
-      case INT -> new NumberField(DataGenerator.getNumber(json, key, field.def()), true, field.min(), field.max(), field.step(), width)
+      case INT -> new NumberField(GenUtil.getNumber(json, key, field.def()), true, field.min(), field.max(), field.step(), width)
         .onValue(v -> { json.addProperty(key, (int) Math.round(v)); Page.changed(); });
-      case FLOAT -> new NumberField(DataGenerator.getNumber(json, key, field.def()), false, field.min(), field.max(), field.step(), width)
+      case FLOAT -> new NumberField(GenUtil.getNumber(json, key, field.def()), false, field.min(), field.max(), field.step(), width)
         .onValue(v -> { json.addProperty(key, (float) v); Page.changed(); });
-      case PERCENT -> new NumberField(Math.round(DataGenerator.getNumber(json, key, 0) * 1000) / 10.0, false, field.min(), field.max(), field.step(), width)
+      case PERCENT -> new NumberField(Math.round(GenUtil.getNumber(json, key, 0) * 1000) / 10.0, false, field.min(), field.max(), field.step(), width)
         .suffix("%")
         .onValue(v -> { json.addProperty(key, (float) (v / 100.0)); Page.changed(); });
       case TIER -> {
         List<String> tiers = new ArrayList<>(StatSchema.TIERS);
-        String current = DataGenerator.getString(json, key, "minecraft:iron");
+        String current = GenUtil.getString(json, key, "minecraft:iron");
         if (!tiers.contains(current)) {
           tiers.add(current);
         }
-        yield new Dropdown<>(tiers, Names::harvestTier, () -> DataGenerator.getString(json, key, "minecraft:iron"), v -> {
+        yield new Dropdown<>(tiers, Names::harvestTier, () -> GenUtil.getString(json, key, "minecraft:iron"), v -> {
           json.addProperty(key, v);
           Page.changed();
         }, width);
       }
-      case TEXT -> new TextField(DataGenerator.getString(json, key, ""), width).onChange(v -> { json.addProperty(key, v); Page.changed(); });
+      case TEXT -> new TextField(GenUtil.getString(json, key, ""), width).onChange(v -> { json.addProperty(key, v); Page.changed(); });
     };
   }
 }

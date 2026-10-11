@@ -32,6 +32,7 @@ import slimeknights.tconstruct.library.materials.stats.MaterialStatsId;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.modifiers.ModifierManager;
+import slimeknights.tconstruct.library.tools.SlotType;
 import slimeknights.tconstruct.library.tools.item.IModifiable;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.library.tools.stat.ToolStats;
@@ -57,6 +58,7 @@ public final class SelfTest {
   private static int wait = 0;
   private static final List<String> REPORT = new ArrayList<>();
   private static int failures = 0;
+  private static Exporter.Result exportResult;
 
   private static void check(boolean ok, String what) {
     REPORT.add((ok ? "PASS " : "FAIL ") + what);
@@ -110,9 +112,14 @@ public final class SelfTest {
       case 3 -> {
         if (busy()) return;
         verify();
+        startAttackTest(mc);
+        wait = 10;
         step++;
       }
       case 4 -> {
+        check(attackResult != null && attackResult.startsWith("hit"), "ruby sword attack on the server: " + attackResult);
+        check(attackResult != null && attackResult.contains("target poison=true"), "on hit effect applied to the target (poison)");
+        check(attackResult != null && attackResult.contains("self speed=true"), "on use effect applied to the attacker (speed)");
         // give test tools
         mc.player.getInventory().clearContent();
         ClientApply.giveTestTools(NS + ":ruby");
@@ -156,12 +163,35 @@ public final class SelfTest {
           }
         }
         check(refreshed > 0, "tools in inventory refreshed after reload: " + refreshed);
-        // export
+        // export, references the game does not know are left out instead of breaking the pack
+        MaterialDoc broken = new MaterialDoc();
+        broken.id = NS + ":broken";
+        broken.stats.put("tconstruct:head", StatSchema.defaults(StatSchema.get("tconstruct:head")));
+        broken.items.add(new MaterialDoc.ItemRef("minecraft:not_an_item", 1, 1));
+        broken.fluid.enabled = true;
+        broken.fluid.fluid = "minecraft:diamond";
+        EditorSession.workspace().materials.add(broken);
         try {
           Exporter.Result result = Exporter.export(EditorSession.workspace());
+          exportResult = result;
           check(Files.size(result.dataPack()) > 500 && Files.size(result.resourcePack()) > 1000, "export zips written " + Files.size(result.dataPack()) + " / " + Files.size(result.resourcePack()));
+          check(result.problems().stream().anyMatch(p -> p.key().equals("unknown_fluid") && p.detail().equals("minecraft:diamond"))
+            && result.problems().stream().anyMatch(p -> p.key().equals("unknown_item") && p.detail().equals("minecraft:not_an_item")), "export reports unknown fluid and item: " + result.problems());
+          try (java.util.zip.ZipFile jar = new java.util.zip.ZipFile(result.modJar().toFile())) {
+            String toml = new String(jar.getInputStream(jar.getEntry("META-INF/neoforge.mods.toml")).readAllBytes(), StandardCharsets.UTF_8);
+            check(toml.contains("modLoader=\"lowcodefml\"") && jar.getEntry("pack.mcmeta") != null, "mod jar has a code free mod description");
+            check(jar.getEntry("data/" + NS + "/tinkering/materials/definition/ruby.json") != null && jar.getEntry("assets/" + NS + "/lang/zh_cn.json") != null
+              && jar.getEntry("assets/" + NS + "/tinkering/materials/ruby.json") != null, "mod jar holds data and assets");
+            check(jar.getEntry("data/" + NS + "/tinkering/materials/definition/broken.json") != null && jar.getEntry("data/" + NS + "/recipe/tcmateditor/broken/casting.json") == null
+              && jar.getEntry("data/" + NS + "/recipe/tcmateditor/broken/item_0.json") == null, "broken recipes left out of the export");
+          }
         } catch (IOException e) {
           check(false, "export failed " + e);
+        } finally {
+          EditorSession.workspace().materials.remove(broken);
+          try {
+            EditorSession.workspace().save();
+          } catch (IOException ignored) {}
         }
         // open the editor
         EditorSession.mode = EditorSession.Mode.MATERIALS;
@@ -191,7 +221,14 @@ public final class SelfTest {
         wait = 6;
         step++;
       }
-      case 14 -> { shot("small_entry"); wait = 4; step++; }
+      case 14 -> {
+        shot("small_entry");
+        // scroll down to the effect lines
+        mc.screen.mouseScrolled(mc.getWindow().getGuiScaledWidth() * 0.7, mc.getWindow().getGuiScaledHeight() * 0.6, 0, -16);
+        wait = 4;
+        step = 140;
+      }
+      case 140 -> { shot("small_entry_effects"); wait = 2; step = 15; }
       case 15 -> {
         EditorSession.mode = EditorSession.Mode.MATERIALS;
         EditorSession.materialTab = 3;
@@ -217,7 +254,15 @@ public final class SelfTest {
       }
       case 100 -> { shot("large_upgrade_recipe"); com.tcmateditor.client.gui.ui.HelpBadge.forceOpen = true; wait = 3; step++; }
       case 101 -> { shot("large_upgrade_help"); com.tcmateditor.client.gui.ui.HelpBadge.forceOpen = false; EditorSession.upgradeTab = 1; UI.requestRebuild(); wait = 6; step++; }
-      case 102 -> { shot("large_upgrade_tools"); wait = 2; step = 23; }
+      case 102 -> {
+        shot("large_upgrade_tools");
+        if (exportResult != null) {
+          com.tcmateditor.client.gui.Dialogs.exported(exportResult);
+        }
+        wait = 4;
+        step++;
+      }
+      case 103 -> { shot("large_export_dialog"); UI.closeAllPopups(); wait = 2; step = 23; }
       // light theme
       case 23 -> {
         com.tcmateditor.client.ClientSettings.setLightTheme(true);
@@ -255,9 +300,52 @@ public final class SelfTest {
         shot("light_small_general");
         com.tcmateditor.client.ClientSettings.setLightTheme(false);
         check(!com.tcmateditor.client.gui.Theme.isLight(), "dark theme restored");
+        // UI language: show the editor in another language while the game keeps its own
+        gameExport = net.minecraft.locale.Language.getInstance().getOrDefault("tcmateditor.button.export");
+        uiTarget = mc.getLanguageManager().getSelected().equals("en_us") ? "ja_jp" : "en_us";
+        com.tcmateditor.client.ClientSettings.setUiLanguage(uiTarget);
+        com.tcmateditor.client.UiLanguage.ensureActive();
+        EditorSession.mode = EditorSession.Mode.ENTRIES;
+        EditorSession.entryTab = 0;
+        UI.requestRebuild();
+        mc.getWindow().setWindowed(1600, 900);
+        wait = 10;
         step++;
       }
-      case 31 -> finish();
+      case 31 -> {
+        net.minecraft.locale.Language active = net.minecraft.locale.Language.getInstance();
+        String export = active.getOrDefault("tcmateditor.button.export");
+        check(uiTarget.equals("en_us") ? export.equals("Export") : export.equals("エクスポート"), "editor UI switched to " + uiTarget + ": " + export);
+        String gilded = active.getOrDefault("modifier.tconstruct.gilded");
+        check(uiTarget.equals("en_us") ? gilded.equals("Gilded") : gilded.equals("金メッキ"), "Tinkers' names follow the editor language: " + gilded);
+        check(EditorSession.editLanguage().equals(uiTarget), "texts are edited in the UI language: " + EditorSession.editLanguage());
+        shot("uilang_entry");
+        com.tcmateditor.client.gui.Dialogs.help();
+        wait = 4;
+        step++;
+      }
+      case 32 -> {
+        shot("uilang_help");
+        UI.closeAllPopups();
+        EditorSession.mode = EditorSession.Mode.MATERIALS;
+        EditorSession.materialTab = 4;
+        UI.requestRebuild();
+        wait = 6;
+        step++;
+      }
+      case 33 -> {
+        shot("uilang_info");
+        // Ctrl+S only saves, nothing is sent to the server
+        ClientApply.save();
+        check(!ClientApply.isWaiting() && EditorSession.status.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t && t.getKey().equals("tcmateditor.status.saved_only"),
+          "save only does not reload: " + EditorSession.status.getString());
+        // closing the editor puts the game language back
+        mc.setScreen(null);
+        check(net.minecraft.locale.Language.getInstance().getOrDefault("tcmateditor.button.export").equals(gameExport), "game language restored when the editor closes");
+        com.tcmateditor.client.ClientSettings.setUiLanguage("");
+        step++;
+      }
+      case 34 -> finish();
       default -> {}
     }
   }
@@ -349,6 +437,25 @@ public final class SelfTest {
     speed.perLevel = -0.1f;
     speed.slots = new ArrayList<>(List.of("mainhand"));
     sharp.lines.add(speed);
+    EntryDoc.Line souls = new EntryDoc.Line();
+    souls.kind = "slot";
+    souls.target = "souls";
+    souls.flat = 0;
+    souls.perLevel = 1;
+    sharp.lines.add(souls);
+    // potion effects: poison the target on hit, speed for yourself
+    EntryDoc.Line poison = new EntryDoc.Line();
+    poison.kind = "effect";
+    poison.target = "minecraft:poison";
+    poison.op = "weapon";
+    poison.flat = 1;
+    poison.perLevel = 0;
+    poison.seconds = 5;
+    sharp.lines.add(poison);
+    EntryDoc.Line speedSelf = poison.copy();
+    speedSelf.target = "minecraft:speed";
+    speedSelf.op = "self";
+    sharp.lines.add(speedSelf);
     sharp.lang.put("zh_cn", new LangText("锋锐", "更痛，但更慢", "每级 +2 攻击伤害，-10% 攻击速度"));
     sharp.lang.put("en_us", new LangText("Sharp", "Hurts more, swings slower", "+2 damage and -10% attack speed per level"));
     workspace.entries.add(sharp);
@@ -377,6 +484,9 @@ public final class SelfTest {
     JsonObject handle = ruby.stats.get("tconstruct:handle");
     handle.addProperty("melee_damage", 0.1f);
     ruby.defaultTraits.add(new MaterialDoc.TraitRef(NS + ":sharp", 2));
+    ruby.slots.put("upgrades", 1);
+    ruby.slots.put("abilities", -1);
+    ruby.slots.put("defense", 2);
     ruby.items.add(new MaterialDoc.ItemRef("minecraft:redstone_block", 1, 1));
     ruby.texture = TextureDoc.createDefault(0xFFE0304A);
     TextureDoc.Effect sparkle = new TextureDoc.Effect();
@@ -408,6 +518,41 @@ public final class SelfTest {
     workspace.materials.add(copy);
   }
 
+  private static volatile String attackResult = null;
+  private static String gameExport = "";
+  private static String uiTarget = "en_us";
+
+  /** Hits a sturdy pig with a ruby sword on the server thread, the sharp entry should poison it and speed us up */
+  private static void startAttackTest(Minecraft mc) {
+    net.minecraft.server.MinecraftServer server = mc.getSingleplayerServer();
+    java.util.UUID uuid = mc.player.getUUID();
+    server.execute(() -> {
+      try {
+        net.minecraft.server.level.ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        net.minecraft.world.entity.animal.Pig pig = net.minecraft.world.entity.EntityType.PIG.create(level);
+        pig.moveTo(player.getX() + 1.5, player.getY(), player.getZ(), 0, 0);
+        pig.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(1000);
+        pig.setHealth(1000);
+        level.addFreshEntity(pig);
+        ItemStack sword = slimeknights.tconstruct.library.tools.helper.ToolBuildHandler.createSingleMaterial(slimeknights.tconstruct.tools.TinkerTools.sword.get(),
+          slimeknights.tconstruct.library.materials.definition.MaterialVariant.of(new MaterialId(NS, "ruby"), ""));
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, sword);
+        player.removeAllEffects();
+        boolean hit = slimeknights.tconstruct.library.tools.helper.ToolAttackUtil.attackEntity(ToolStack.from(sword), player, net.minecraft.world.InteractionHand.MAIN_HAND, pig, () -> 1.0, false, net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+        net.minecraft.world.effect.MobEffectInstance poison = pig.getEffect(net.minecraft.world.effect.MobEffects.POISON);
+        attackResult = (hit ? "hit" : "miss") + ", target poison=" + (poison != null) + (poison != null ? " (" + poison.getDuration() + " ticks, amplifier " + poison.getAmplifier() + ")" : "")
+          + ", self speed=" + player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED);
+        pig.discard();
+        player.removeAllEffects();
+        // the test world is reused, start the tool tests with an empty inventory on the server too
+        player.getInventory().clearContent();
+      } catch (RuntimeException e) {
+        attackResult = "error " + e;
+      }
+    });
+  }
+
   private static void verify() {
     MaterialId rubyId = new MaterialId(NS, "ruby");
     IMaterial ruby = MaterialRegistry.getMaterial(rubyId);
@@ -415,7 +560,8 @@ public final class SelfTest {
     check(ruby.getTier() == 3, "ruby tier " + ruby.getTier());
     check(MaterialRegistry.getInstance().getAllStats(rubyId).size() == 11, "ruby stat types " + MaterialRegistry.getInstance().getAllStats(rubyId).size());
     List<ModifierEntry> traits = MaterialRegistry.getInstance().getDefaultTraits(rubyId);
-    check(traits.size() == 1 && traits.get(0).getId().toString().equals(NS + ":sharp") && traits.get(0).getLevel() == 2, "ruby traits " + traits);
+    check(traits.size() == 2 && traits.get(0).getId().toString().equals(NS + ":sharp") && traits.get(0).getLevel() == 2
+      && traits.get(1).getId().toString().equals(NS + ":ruby_slots"), "ruby traits " + traits);
     check(MaterialRegistry.getMaterial(new MaterialId(NS, "iron_copy")) != IMaterial.UNKNOWN, "imported copy loaded");
     ModifierId sharp = new ModifierId(NS, "sharp");
     check(ModifierManager.INSTANCE.contains(sharp), "custom entry loaded as modifier");
@@ -425,6 +571,29 @@ public final class SelfTest {
     check(!sprite.contents().name().equals(MissingTextureAtlasSprite.getLocation()), "generated pickaxe head sprite in atlas " + sprite.contents().name());
     TextureAtlasSprite ironHead = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(ResourceLocation.parse("tconstruct:item/tool/pickaxe/head_selftest_iron_copy"));
     check(!ironHead.contents().name().equals(MissingTextureAtlasSprite.getLocation()), "generated iron copy sprite in atlas");
+    // modifier slots from the material and from an entry line
+    check(ModifierManager.INSTANCE.contains(new ModifierId(NS, "ruby_slots")), "material slot trait loaded as modifier");
+    check(I18n.exists("modifier.selftest.ruby_slots"), "slot trait translated: " + I18n.get("modifier.selftest.ruby_slots") + " / " + I18n.get("modifier.selftest.ruby_slots.description"));
+    ToolStack rubyPick = ToolStack.from(slimeknights.tconstruct.library.tools.helper.ToolBuildHandler.createSingleMaterial(slimeknights.tconstruct.tools.TinkerTools.pickaxe.get(),
+      slimeknights.tconstruct.library.materials.definition.MaterialVariant.of(rubyId, "")));
+    ToolStack ironPick = ToolStack.from(slimeknights.tconstruct.library.tools.helper.ToolBuildHandler.createSingleMaterial(slimeknights.tconstruct.tools.TinkerTools.pickaxe.get(),
+      slimeknights.tconstruct.library.materials.definition.MaterialVariant.of(new MaterialId(NS, "iron_copy"), "")));
+    int upgrades = rubyPick.getFreeSlots(SlotType.UPGRADE) - ironPick.getFreeSlots(SlotType.UPGRADE);
+    int abilities = rubyPick.getFreeSlots(SlotType.ABILITY) - ironPick.getFreeSlots(SlotType.ABILITY);
+    check(upgrades == 1 && abilities == -1, "material slots once per tool: upgrades " + upgrades + ", abilities " + abilities);
+    ToolStack rubyChest = ToolStack.from(slimeknights.tconstruct.library.tools.helper.ToolBuildHandler.createSingleMaterial(
+      slimeknights.tconstruct.tools.TinkerTools.plateArmor.get(net.minecraft.world.item.ArmorItem.Type.CHESTPLATE),
+      slimeknights.tconstruct.library.materials.definition.MaterialVariant.of(rubyId, "")));
+    ToolStack ironChest = ToolStack.from(slimeknights.tconstruct.library.tools.helper.ToolBuildHandler.createSingleMaterial(
+      slimeknights.tconstruct.tools.TinkerTools.plateArmor.get(net.minecraft.world.item.ArmorItem.Type.CHESTPLATE),
+      slimeknights.tconstruct.library.materials.definition.MaterialVariant.of(new MaterialId(NS, "iron_copy"), "")));
+    int defense = rubyChest.getFreeSlots(SlotType.DEFENSE) - ironChest.getFreeSlots(SlotType.DEFENSE);
+    int chestAbilities = rubyChest.getFreeSlots(SlotType.ABILITY) - ironChest.getFreeSlots(SlotType.ABILITY);
+    check(defense == 2 && chestAbilities == -1, "armor slots: defense " + ironChest.getFreeSlots(SlotType.DEFENSE) + " -> " + rubyChest.getFreeSlots(SlotType.DEFENSE)
+      + ", abilities " + ironChest.getFreeSlots(SlotType.ABILITY) + " -> " + rubyChest.getFreeSlots(SlotType.ABILITY));
+    int soulSlots = rubyPick.getFreeSlots(SlotType.SOUL) - ironPick.getFreeSlots(SlotType.SOUL);
+    int sharpLevel = rubyPick.getModifierLevel(sharp);
+    check(sharpLevel > 0 && soulSlots == sharpLevel, "entry slot line: +" + soulSlots + " soul slots at sharp level " + sharpLevel);
     Path data = EditorPaths.livePack().resolve("data/selftest/tinkering/materials/stats/ruby.json");
     check(Files.exists(data), "live pack data written");
     verifyUpgrade();

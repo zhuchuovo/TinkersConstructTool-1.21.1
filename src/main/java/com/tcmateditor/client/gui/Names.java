@@ -6,6 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import slimeknights.tconstruct.library.modifiers.Modifier;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
@@ -67,6 +68,20 @@ public final class Names {
   public static Component harvestTier(String id) {
     ResourceLocation location = rl(id);
     return Component.translatableWithFallback("stat.tconstruct.harvest_tier." + location.getNamespace() + "." + location.getPath(), location.getPath());
+  }
+
+  /** Mob effect name, or the ID if it does not exist */
+  public static Component effect(String id) {
+    ResourceLocation location = ResourceLocation.tryParse(id == null ? "" : id);
+    MobEffect effect = location == null ? null : BuiltInRegistries.MOB_EFFECT.get(location);
+    return effect != null ? Component.translatable(effect.getDescriptionId()) : Component.literal(String.valueOf(id));
+  }
+
+  /** Mob effect particle color */
+  public static int effectColor(String id) {
+    ResourceLocation location = ResourceLocation.tryParse(id == null ? "" : id);
+    MobEffect effect = location == null ? null : BuiltInRegistries.MOB_EFFECT.get(location);
+    return effect != null ? effect.getColor() | 0xFF000000 : Theme.TEXT_DIM;
   }
 
   /** Modifier name, custom entries first */

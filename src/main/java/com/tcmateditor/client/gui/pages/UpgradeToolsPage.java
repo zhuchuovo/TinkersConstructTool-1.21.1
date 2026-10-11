@@ -1,6 +1,7 @@
 package com.tcmateditor.client.gui.pages;
 
 import com.tcmateditor.client.gui.Form;
+import com.tcmateditor.client.gui.Icons;
 import com.tcmateditor.client.gui.Names;
 import com.tcmateditor.client.gui.Pickers;
 import com.tcmateditor.client.gui.Theme;
@@ -142,7 +143,7 @@ public class UpgradeToolsPage implements Page {
       if (ref.startsWith("#tconstruct:modifiable") && CATEGORIES.stream().anyMatch(c -> tag(c).equals(ref))) {
         continue;
       }
-      form.place(new ItemIcon(() -> GeneralPage.iconFor(ref)).size(18, 16), 0);
+      form.place(new ItemIcon(() -> Icons.forRef(ref)).size(18, 16), 0);
       form.place(new Label(categoryName(ref), Theme.TEXT), 22).at(form.pad + 22, form.y + 4).size(form.width() - 44, 9).tooltip(Component.literal(ref));
       form.place(new Button(Component.literal("×"), () -> {
         refs.remove(ref);

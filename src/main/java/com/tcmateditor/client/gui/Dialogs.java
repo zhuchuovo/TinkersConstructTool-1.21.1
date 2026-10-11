@@ -2,14 +2,21 @@ package com.tcmateditor.client.gui;
 
 import com.tcmateditor.client.ClientSettings;
 import com.tcmateditor.client.EditorSession;
+import com.tcmateditor.client.Exporter;
+import com.tcmateditor.client.UiLanguage;
 import com.tcmateditor.client.gui.ui.Button;
 import com.tcmateditor.client.gui.ui.Label;
 import com.tcmateditor.client.gui.ui.Popup;
 import com.tcmateditor.client.gui.ui.TextField;
 import com.tcmateditor.client.gui.ui.UI;
+import com.tcmateditor.gen.DataGenerator.Problem;
+import com.tcmateditor.model.Languages;
 import com.tcmateditor.model.Workspace;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+
+import java.util.List;
 
 /** Modal dialogs */
 public final class Dialogs {
@@ -45,6 +52,55 @@ public final class Dialogs {
     popup.h = buttonsY + 26;
     UI.openPopup(popup);
     popup.center(screenW(), screenH());
+  }
+
+  /** Where the exported files go, plus anything that was left out */
+  public static void exported(Exporter.Result result) {
+    Popup popup = new Popup();
+    popup.modal = true;
+    int width = Math.min(320, screenW() - 20);
+    popup.w = width;
+    popup.add(new Label(Names.tr("export.title"), Theme.ACCENT)).at(10, 10);
+    int y = 26;
+    String jar = result.modJar().getFileName().toString();
+    String data = result.dataPack().getFileName().toString();
+    String resources = result.resourcePack().getFileName().toString();
+    for (Component text : new Component[] { Names.tr("export.jar", jar), Names.tr("export.packs", data, resources) }) {
+      Label line = popup.add(new Label(Component.literal("• ").append(text), Theme.TEXT).wrap(width - 20));
+      line.at(10, y);
+      y += line.h + 4;
+    }
+    List<Problem> problems = result.problems();
+    if (!problems.isEmpty()) {
+      y += 4;
+      Label header = popup.add(new Label(Names.tr("export.problems", problems.size()), Theme.WARNING).wrap(width - 20));
+      header.at(10, y);
+      y += header.h + 3;
+      int shown = Math.min(problems.size(), 6);
+      for (int i = 0; i < shown; i++) {
+        Label line = popup.add(new Label(problemText(problems.get(i)), Theme.TEXT_DIM).wrap(width - 30));
+        line.at(18, y);
+        y += line.h + 2;
+      }
+      if (problems.size() > shown) {
+        popup.add(new Label(Names.tr("export.more", problems.size() - shown), Theme.TEXT_FAINT)).at(18, y);
+        y += 11;
+      }
+    }
+    y += 8;
+    Button close = new Button(Names.tr("button.done"), popup::close).style(Button.Style.PRIMARY);
+    close.w = Math.max(close.w, 50);
+    popup.add(close).at(width - 10 - close.w, y);
+    Button open = new Button(Names.tr("button.open_folder"), () -> Util.getPlatform().openFile(result.folder().toFile()));
+    popup.add(open).at(width - 14 - close.w - open.w, y);
+    popup.h = y + 26;
+    UI.openPopup(popup);
+    popup.center(screenW(), screenH());
+  }
+
+  /** "owner: message" for a generation problem */
+  public static Component problemText(Problem problem) {
+    return Names.tr("problem.line", problem.owner(), Names.tr("problem." + problem.key(), problem.detail()));
   }
 
   /** Short help and workspace settings */
@@ -86,6 +142,32 @@ public final class Dialogs {
         }
       }).style(Button.Style.CHIP).selected(() -> ClientSettings.isLightTheme() == light);
       chip.w = Math.max(chip.w, 44);
+      popup.add(chip).at(chipX, y);
+      chipX += chip.w + 4;
+    }
+    y += 22;
+    // UI language, also the language texts are written in
+    popup.add(new Label(Names.tr("label.ui_language"), Theme.TEXT)).at(10, y + 4).tooltip(Names.tr("hint.ui_language"));
+    chipX = 90;
+    List<String> choices = new java.util.ArrayList<>(List.of(""));
+    choices.addAll(Languages.CODES);
+    for (String code : choices) {
+      Component label = code.isEmpty() ? Names.tr("ui_language.auto") : Component.literal(Languages.LABELS.get(code));
+      Button chip = new Button(label, () -> {
+        if (!ClientSettings.uiLanguage().equals(code)) {
+          ClientSettings.setUiLanguage(code);
+          UiLanguage.ensureActive();
+          // reopen so everything picks up the new language
+          popup.close();
+          UI.requestRebuild();
+          help();
+        }
+      }).style(Button.Style.CHIP).selected(() -> ClientSettings.uiLanguage().equals(code));
+      chip.w = Math.max(chip.w, 44);
+      if (chipX + chip.w > width - 10) {
+        y += 18;
+        chipX = 90;
+      }
       popup.add(chip).at(chipX, y);
       chipX += chip.w + 4;
     }

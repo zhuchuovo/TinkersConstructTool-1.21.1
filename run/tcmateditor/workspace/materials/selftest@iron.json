@@ -71,6 +71,7 @@
       }
     ]
   },
+  "slots": {},
   "items": [
     {
       "ingredient": "minecraft:iron_nugget",

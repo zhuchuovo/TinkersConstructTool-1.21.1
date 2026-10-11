@@ -10,15 +10,17 @@
       "each_level": 1.0
     },
     {
-      "type": "tconstruct:attribute",
-      "unique": "selftest.modifier.sharp.line1",
-      "attribute": "minecraft:generic.attack_speed",
-      "operation": "add_value",
-      "flat": 0.0,
-      "each_level": -0.1,
-      "slots": [
-        "mainhand"
-      ]
+      "type": "tconstruct:weapon_mob_effect",
+      "effect": "minecraft:poison",
+      "level": {
+        "flat": 1.0
+      },
+      "time": {
+        "flat": 100.0
+      },
+      "chance": {
+        "flat": 1.0
+      }
     }
   ]
 }

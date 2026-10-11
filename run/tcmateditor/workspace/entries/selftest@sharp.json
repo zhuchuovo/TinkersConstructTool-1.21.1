@@ -11,17 +11,25 @@
       "perLevel": 1.0,
       "slots": [
         "mainhand"
-      ]
+      ],
+      "seconds": 5.0,
+      "secondsPerLevel": 0.0,
+      "chance": 100.0,
+      "chancePerLevel": 0.0
     },
     {
-      "kind": "attribute",
-      "target": "minecraft:generic.attack_speed",
-      "op": "add_value",
-      "flat": 0.0,
-      "perLevel": -0.1,
+      "kind": "effect",
+      "target": "minecraft:poison",
+      "op": "weapon",
+      "flat": 1.0,
+      "perLevel": 0.0,
       "slots": [
         "mainhand"
-      ]
+      ],
+      "seconds": 5.0,
+      "secondsPerLevel": 0.0,
+      "chance": 100.0,
+      "chancePerLevel": 0.0
     }
   ],
   "lang": {
@@ -34,6 +42,11 @@
       "name": "Sharp",
       "flavor": "Hurts more, swings slower",
       "desc": "+2 damage and -10% attack speed per level"
+    },
+    "zh_tw": {
+      "name": "",
+      "flavor": "",
+      "desc": ""
     }
   }
 }

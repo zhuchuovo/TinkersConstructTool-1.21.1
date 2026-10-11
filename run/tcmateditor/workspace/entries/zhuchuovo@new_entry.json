@@ -11,7 +11,11 @@
       "perLevel": 1.0,
       "slots": [
         "mainhand"
-      ]
+      ],
+      "seconds": 5.0,
+      "secondsPerLevel": 0.0,
+      "chance": 100.0,
+      "chancePerLevel": 0.0
     }
   ],
   "lang": {

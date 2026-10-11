@@ -17,6 +17,8 @@ public final class ClientSettings {
 
   private static boolean loaded = false;
   private static boolean lightTheme = false;
+  /** Editor UI language code, empty to follow the game */
+  private static String uiLanguage = "";
 
   private static Path file() {
     return EditorPaths.root().resolve("client_settings.json");
@@ -33,6 +35,7 @@ public final class ClientSettings {
       if (Files.exists(file)) {
         JsonObject json = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
         lightTheme = json.has("light_theme") && json.get("light_theme").getAsBoolean();
+        uiLanguage = json.has("ui_language") ? json.get("ui_language").getAsString() : "";
       }
     } catch (IOException | RuntimeException e) {
       TCMatEditor.LOG.warn("Failed to read client settings", e);
@@ -50,9 +53,21 @@ public final class ClientSettings {
     save();
   }
 
+  /** Editor UI language code, empty to follow the game */
+  public static String uiLanguage() {
+    load();
+    return uiLanguage;
+  }
+
+  public static void setUiLanguage(String code) {
+    uiLanguage = code == null ? "" : code;
+    save();
+  }
+
   private static void save() {
     JsonObject json = new JsonObject();
     json.addProperty("light_theme", lightTheme);
+    json.addProperty("ui_language", uiLanguage);
     try {
       Files.createDirectories(file().getParent());
       Files.writeString(file(), json.toString(), StandardCharsets.UTF_8);

@@ -29,10 +29,8 @@ public final class EditorSession {
   public static int materialTab = 0;
   public static int entryTab = 0;
   public static int upgradeTab = 0;
-  /** Language tab used for texts */
-  public static String editLanguage = null;
-  /** Apply data changes automatically shortly after editing */
-  public static boolean autoApply = true;
+  /** Apply data changes automatically shortly after editing, off by default so only Apply / Ctrl+Shift+S reloads */
+  public static boolean autoApply = false;
   /** Scroll positions per page key */
   public static final Map<String,Double> SCROLL = new HashMap<>();
   public static String listSearch = "";
@@ -55,16 +53,14 @@ public final class EditorSession {
     return workspace;
   }
 
+  /** Language texts are edited in, the same as the UI language */
   public static String editLanguage() {
-    if (editLanguage == null) {
-      editLanguage = Languages.bestFor(Minecraft.getInstance().getLanguageManager().getSelected());
-    }
-    return editLanguage;
+    return UiLanguage.code();
   }
 
-  /** Language used for names in lists */
+  /** Language used for the UI and names in lists, chosen in the settings */
   public static String uiLanguage() {
-    return Languages.bestFor(Minecraft.getInstance().getLanguageManager().getSelected());
+    return UiLanguage.code();
   }
 
   public static void setStatus(Component text, int color) {

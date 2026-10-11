@@ -1,9 +1,9 @@
 package com.tcmateditor.client.gui.ui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.tcmateditor.client.gui.Icons;
 import com.tcmateditor.client.gui.Names;
 import com.tcmateditor.client.gui.Theme;
-import com.tcmateditor.client.gui.pages.GeneralPage;
 import com.tcmateditor.model.AnvilSlots;
 import com.tcmateditor.model.UpgradeDoc;
 import net.minecraft.client.gui.GuiGraphics;
@@ -117,7 +117,7 @@ public class AnvilSlotsEditor extends UIElement {
         g.renderOutline(sx - 1, sy - 1, SLOT + 2, SLOT + 2, Theme.ACCENT);
       }
       UpgradeDoc.SlotInput input = upgrade.slot(i);
-      ItemStack stack = input.isEmpty() ? ItemStack.EMPTY : GeneralPage.iconFor(input.ingredient);
+      ItemStack stack = input.isEmpty() ? ItemStack.EMPTY : Icons.forRef(input.ingredient);
       if (!stack.isEmpty()) {
         g.renderItem(stack, sx + 2, sy + 2);
         if (input.count > 1) {

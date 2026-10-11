@@ -4,6 +4,7 @@ import com.tcmateditor.client.EditorSession;
 import com.tcmateditor.client.MaterialImporter;
 import com.tcmateditor.client.gui.ui.SearchPopup;
 import com.tcmateditor.client.gui.ui.SearchPopup.Entry;
+import com.tcmateditor.gen.EntryGenerator;
 import com.tcmateditor.model.EntryDoc;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -95,6 +96,10 @@ public final class Pickers {
     new SearchPopup(Names.tr("picker.modifier"), entries, entry -> onPick.accept(entry.id())).open();
   }
 
+  /** Prefix of the modifier slot choices in the tool stat picker */
+  public static final String SLOT_PREFIX = "slot:";
+
+  /** Numeric tool stats, with the modifier slot types listed first as {@code slot:<type>} */
   public static void toolStat(Consumer<String> onPick) {
     List<Entry> entries = new ArrayList<>();
     for (IToolStat<?> stat : ToolStats.getAllStats()) {
@@ -104,7 +109,21 @@ public final class Pickers {
       }
     }
     entries.sort(Comparator.comparing(e -> e.label().getString()));
+    List<String> slotTypes = EntryGenerator.MODIFIER_SLOT_TYPES;
+    for (int i = slotTypes.size() - 1; i >= 0; i--) {
+      entries.add(0, new Entry(SLOT_PREFIX + slotTypes.get(i), Names.tr("slot_type." + slotTypes.get(i)), Names.tr("picker.slot_sub"), Theme.ACCENT, ItemStack.EMPTY));
+    }
     new SearchPopup(Names.tr("picker.tool_stat"), entries, entry -> onPick.accept(entry.id())).open();
+  }
+
+  /** Mob (potion) effects */
+  public static void mobEffect(Consumer<String> onPick) {
+    List<Entry> entries = new ArrayList<>();
+    for (ResourceLocation id : BuiltInRegistries.MOB_EFFECT.keySet()) {
+      entries.add(new Entry(id.toString(), Names.effect(id.toString()), Component.literal(id.toString()), Names.effectColor(id.toString()), ItemStack.EMPTY));
+    }
+    entries.sort(Comparator.comparing(e -> e.label().getString()));
+    new SearchPopup(Names.tr("picker.effect"), entries, entry -> onPick.accept(entry.id())).open();
   }
 
   public static void attribute(Consumer<String> onPick) {

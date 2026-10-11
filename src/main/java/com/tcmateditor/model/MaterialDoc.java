@@ -21,6 +21,8 @@ public class MaterialDoc {
   public List<TraitRef> defaultTraits = new ArrayList<>();
   /** Stat type or stat group ID to traits */
   public LinkedHashMap<String,List<TraitRef>> statTraits = new LinkedHashMap<>();
+  /** Modifier slots added to tools using this material, slot type to amount (negative removes slots) */
+  public LinkedHashMap<String,Integer> slots = new LinkedHashMap<>();
   /** Items that can be used in the part builder */
   public List<ItemRef> items = new ArrayList<>();
   /** Optional casting/melting fluid */
@@ -116,6 +118,16 @@ public class MaterialDoc {
     return texture.mainColor() | 0xFF000000;
   }
 
+  /** True if the material changes any modifier slots */
+  public boolean hasSlots() {
+    return slots.values().stream().anyMatch(v -> v != null && v != 0);
+  }
+
+  /** ID of the hidden trait that carries the slot changes */
+  public String slotsModifierId() {
+    return id + "_slots";
+  }
+
   public MaterialDoc copy() {
     MaterialDoc doc = new MaterialDoc();
     doc.id = id;
@@ -130,6 +142,7 @@ public class MaterialDoc {
     for (Map.Entry<String,List<TraitRef>> entry : statTraits.entrySet()) {
       doc.statTraits.put(entry.getKey(), new ArrayList<>(entry.getValue().stream().map(TraitRef::copy).toList()));
     }
+    doc.slots.putAll(slots);
     items.forEach(i -> doc.items.add(i.copy()));
     doc.fluid = fluid.copy();
     doc.texture = texture.copy();
@@ -148,6 +161,8 @@ public class MaterialDoc {
     if (defaultTraits == null) defaultTraits = new ArrayList<>();
     if (statTraits == null) statTraits = new LinkedHashMap<>();
     statTraits.values().removeIf(v -> v == null);
+    if (slots == null) slots = new LinkedHashMap<>();
+    slots.values().removeIf(v -> v == null || v == 0);
     if (items == null) items = new ArrayList<>();
     if (fluid == null) fluid = new FluidRef();
     if (texture == null) texture = TextureDoc.createDefault(0xFFB0B0B0);

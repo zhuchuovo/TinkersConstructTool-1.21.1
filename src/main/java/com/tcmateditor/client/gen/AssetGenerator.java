@@ -9,6 +9,7 @@ import com.tcmateditor.client.texture.PartTextureLibrary;
 import com.tcmateditor.client.texture.PartTextureLibrary.PartInfo;
 import com.tcmateditor.client.texture.Sprite;
 import com.tcmateditor.client.texture.TextureEngine;
+import com.tcmateditor.gen.EntryGenerator;
 import com.tcmateditor.model.EntryDoc;
 import com.tcmateditor.model.LangText;
 import com.tcmateditor.model.Languages;
@@ -18,8 +19,10 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +61,21 @@ public final class AssetGenerator {
       JsonObject materialColors = colors.get(ns).has("material." + ns) ? colors.get(ns).getAsJsonObject("material." + ns) : new JsonObject();
       materialColors.addProperty(path, Colors.hex(doc.nameColor()));
       colors.get(ns).add("material." + ns, materialColors);
+
+      // hidden slot trait, shown in the tinker station
+      if (doc.hasSlots()) {
+        String slotsKey = "modifier." + ns + "." + path + "_slots";
+        for (String code : Languages.CODES) {
+          String[] text = SLOT_TEXT.get(code);
+          String name = Languages.resolve(doc.lang, code, t -> t.name);
+          Map<String,String> texts = lang.computeIfAbsent(ns, n -> new TreeMap<>()).computeIfAbsent(code, c -> new LinkedHashMap<>());
+          texts.put(slotsKey, text[0].formatted(name.isBlank() ? prettyName(path) : name));
+          texts.put(slotsKey + ".description", slotsDescription(doc, text));
+        }
+        JsonObject modifierColors = colors.get(ns).has("modifier." + ns) ? colors.get(ns).getAsJsonObject("modifier." + ns) : new JsonObject();
+        modifierColors.addProperty(path + "_slots", Colors.hex(doc.nameColor()));
+        colors.get(ns).add("modifier." + ns, modifierColors);
+      }
     }
 
     for (EntryDoc doc : workspace.entries) {
@@ -87,6 +105,25 @@ public final class AssetGenerator {
       files.put("assets/" + entry.getKey() + "/mantle/colors.json", json(entry.getValue()));
     }
     return files;
+  }
+
+  /** Per language: name pattern, description prefix, upgrades, abilities, defense, souls, separator (same words as Tinkers') */
+  private static final Map<String,String[]> SLOT_TEXT = Map.of(
+    "zh_cn", new String[] { "%s槽位", "使用此材料的工具：", "升级槽", "能力槽", "防御槽", "灵魂槽", "，" },
+    "zh_tw", new String[] { "%s槽位", "使用此材料的工具：", "升級槽", "能力槽", "防禦槽", "靈魂槽", "，" },
+    "en_us", new String[] { "%s Slots", "Tools using this material: ", "Upgrades", "Abilities", "Defense Slots", "Soul Slots", ", " },
+    "ja_jp", new String[] { "%sのスロット", "この素材を使うツール：", "アップグレード", "アビリティ", "防御スロット", "ソウルスロット", "、" });
+
+  /** e.g. "Tools using this material: Upgrades +1, Abilities -1" */
+  private static String slotsDescription(MaterialDoc doc, String[] text) {
+    List<String> parts = new ArrayList<>();
+    for (int i = 0; i < EntryGenerator.MODIFIER_SLOT_TYPES.size(); i++) {
+      Integer amount = doc.slots.get(EntryGenerator.MODIFIER_SLOT_TYPES.get(i));
+      if (amount != null && amount != 0) {
+        parts.add(text[2 + i] + " " + String.format(Locale.ROOT, "%+d", amount));
+      }
+    }
+    return text[1] + String.join(text[6], parts);
   }
 
   /** Material IDs may not contain '/' as Tinkers' treats the last folder as a variant */
@@ -226,6 +263,7 @@ public final class AssetGenerator {
       material.add("texture", Workspace.GSON.toJsonTree(doc.texture));
       material.add("lang", Workspace.GSON.toJsonTree(doc.lang));
       material.addProperty("color", doc.textColor);
+      material.add("slots", Workspace.GSON.toJsonTree(doc.slots));
       material.add("stats", Workspace.GSON.toJsonTree(textureStats(doc).stream().sorted().toList()));
       json.add("m:" + doc.id, material);
     }
