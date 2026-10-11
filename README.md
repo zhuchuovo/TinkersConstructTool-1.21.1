@@ -19,7 +19,6 @@
 - **导入**：以任意已加载的材料为模板（数值、特性、制作物品、调色板、多语言文本）。
 - **应用（Ctrl+S）**：保存并热重载。数值改动开启「自动应用」后约 1 秒自动生效，背包里的工具会立即刷新；纹理和文本改动会刷新资源。
 - **导出**：在 `<游戏目录>/tcmateditor/exports/` 生成 `*-datapack.zip`（放入存档 `datapacks`）和 `*-resourcepack.zip`（放入 `resourcepacks` 并启用）。
-- **亮色 / 暗色背景**：顶栏的 ☀ / ☾ 按钮一键切换，或在「?」帮助与设置中选择，会自动记住。
 - 自己的 PNG 纹理放进 `<游戏目录>/tcmateditor/patterns/`，即可在「纹理」特效中使用。
 - 多人游戏：服务器也需安装本模组，编辑者需要管理员权限；服务器没装时仍可编辑并导出。
 - **强化的「严格位置」**：开启时生成两个配方——装了本模组时材料必须放在指定槽位（`tcmateditor:positional_modifier`）；没装本模组时自动改用匠魂原生配方（任意顺序），导出的包依然可用。因为注册了这个配方类型，装了本模组的服务器要求客户端也安装本模组。
@@ -42,12 +41,11 @@
 - `data/<ns>/recipe/tcmateditor/upgrade/<name>.json`（强化；适用装备用 NeoForge 自带的 `neoforge:difference` 排除禁用装备）
 - `assets/<ns>/tinkering/materials/<name>.json`、部件纹理 PNG（按 `generator_part_textures.json` 生成，支持附属模组的部件）、语言文件、`mantle/colors.json`
 
-## 构建
+## 构建须知ovo
 
 需要同级目录下已构建的 `TinkersConstruct-1.21.1` 和 `Mantle-1.21.1`（或用 `-Ptconstruct_jar=` / `-Pmantle_jar=` 指定 jar）。
 
 ```
-./gradlew build                                  # 输出 build/libs/TinkersMaterialEditor-1.21.1-1.0.0.jar
-./gradlew runClient -PquickPlay=<存档名>          # 开发客户端直接进入存档
-./gradlew runClient -PquickPlay=<存档名> -PselfTest  # 自动测试：生成示例材料、热重载、校验、截图后退出
+移植的匠魂3：https://github.com/zhuchuovo/TinkersConstruct-1.21.1
+移植版的地幔：https://github.com/zhuchuovo/Mantle-1.21.1
 ```
