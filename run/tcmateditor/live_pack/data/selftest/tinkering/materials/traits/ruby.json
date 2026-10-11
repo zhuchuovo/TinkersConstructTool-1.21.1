@@ -1,0 +1,11 @@
+{
+  "default": [
+    {
+      "name": "selftest:sharp",
+      "level": 2
+    }
+  ],
+  "perStat": {
+    "tconstruct:melee_harvest": []
+  }
+}

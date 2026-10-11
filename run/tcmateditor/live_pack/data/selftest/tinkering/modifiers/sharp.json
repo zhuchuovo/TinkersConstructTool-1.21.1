@@ -1,0 +1,24 @@
+{
+  "level_display": "tconstruct:default",
+  "tooltip_display": "always",
+  "modules": [
+    {
+      "type": "tconstruct:stat_boost",
+      "stat": "tconstruct:attack_damage",
+      "operation": "add",
+      "flat": 0.0,
+      "each_level": 1.0
+    },
+    {
+      "type": "tconstruct:attribute",
+      "unique": "selftest.modifier.sharp.line1",
+      "attribute": "minecraft:generic.attack_speed",
+      "operation": "add_value",
+      "flat": 0.0,
+      "each_level": -0.1,
+      "slots": [
+        "mainhand"
+      ]
+    }
+  ]
+}

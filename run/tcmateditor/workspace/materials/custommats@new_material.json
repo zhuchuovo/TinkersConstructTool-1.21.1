@@ -1,0 +1,134 @@
+{
+  "id": "custommats:new_material",
+  "tier": 1,
+  "sortOrder": 100,
+  "craftable": true,
+  "hidden": false,
+  "stats": {
+    "tconstruct:head": {
+      "durability": 250,
+      "mining_speed": 6.0,
+      "mining_tier": "minecraft:iron",
+      "melee_attack": 2.0
+    },
+    "tconstruct:handle": {
+      "durability": -0.85,
+      "mining_speed": 0.0,
+      "melee_speed": 0.0,
+      "melee_damage": 0.0
+    },
+    "tconstruct:binding": {}
+  },
+  "defaultTraits": [],
+  "statTraits": {
+    "tconstruct:melee_harvest": [],
+    "tconstruct:ranged": [],
+    "tconstruct:armor": [],
+    "tconstruct:ammo": []
+  },
+  "items": [
+    {
+      "ingredient": "minecraft:bedrock",
+      "value": 1,
+      "needed": 1
+    }
+  ],
+  "fluid": {
+    "enabled": false,
+    "fluid": "",
+    "amount": 90,
+    "temperature": 800
+  },
+  "texture": {
+    "baseStyle": "metal",
+    "palette": [
+      {
+        "grey": 0,
+        "color": -16777216
+      },
+      {
+        "grey": 63,
+        "color": -16448251
+      },
+      {
+        "grey": 102,
+        "color": -16119286
+      },
+      {
+        "grey": 140,
+        "color": -15790578
+      },
+      {
+        "grey": 178,
+        "color": -15461613
+      },
+      {
+        "grey": 216,
+        "color": -15066855
+      },
+      {
+        "grey": 255,
+        "color": -9079692
+      }
+    ],
+    "effects": [
+      {
+        "type": "noise",
+        "region": "all",
+        "color": -1,
+        "strength": 0.0,
+        "scale": 3,
+        "seed": 0,
+        "enabled": true,
+        "pattern": ""
+      },
+      {
+        "type": "gradient",
+        "region": "all",
+        "color": -1,
+        "strength": 0.03,
+        "scale": 3,
+        "seed": 1,
+        "enabled": true,
+        "pattern": ""
+      },
+      {
+        "type": "noise",
+        "region": "all",
+        "color": -1,
+        "strength": 0.0,
+        "scale": 1,
+        "seed": 2,
+        "enabled": true,
+        "pattern": ""
+      },
+      {
+        "type": "hue",
+        "region": "all",
+        "color": -1,
+        "strength": 0.48,
+        "scale": 3,
+        "seed": 3,
+        "enabled": true,
+        "pattern": ""
+      }
+    ],
+    "animation": {
+      "type": "none",
+      "frames": 8,
+      "frametime": 3,
+      "color": -1,
+      "strength": 0.5,
+      "interpolate": true
+    },
+    "luminosity": 6
+  },
+  "lang": {
+    "zh_cn": {
+      "name": "基岩",
+      "flavor": "无比的坚硬",
+      "desc": "怎么会有如此坚硬的材料..."
+    }
+  },
+  "textColor": ""
+}

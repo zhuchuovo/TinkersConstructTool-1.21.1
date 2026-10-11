@@ -1,0 +1,34 @@
+modLoader="javafml"
+loaderVersion="${loader_range}"
+license="MIT"
+
+[[mods]]
+modId="tcmateditor"
+version="${version}"
+displayName="Tinkers' Material Editor"
+authors="nizabushangtianm"
+description='''
+In-game material editor for Tinkers' Construct (Shift+Z).
+Everything it creates is plain Tinkers' Construct data/resource pack content, so exported materials keep working without this mod.
+'''
+
+[[dependencies.tcmateditor]]
+modId="neoforge"
+type="required"
+versionRange="${neo_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.tcmateditor]]
+modId="minecraft"
+type="required"
+versionRange="${minecraft_range}"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.tcmateditor]]
+modId="tconstruct"
+type="required"
+versionRange="${tconstruct_range}"
+ordering="AFTER"
+side="BOTH"

@@ -1,0 +1,24 @@
+{
+  "id": "zhuchuovo:new_entry",
+  "color": "#61F29E",
+  "levelDisplay": "default",
+  "lines": [
+    {
+      "kind": "stat",
+      "target": "tconstruct:attack_damage",
+      "op": "add",
+      "flat": -0.5,
+      "perLevel": 1.0,
+      "slots": [
+        "mainhand"
+      ]
+    }
+  ],
+  "lang": {
+    "zh_cn": {
+      "name": "殺人蜂",
+      "flavor": "我要讓他們血債血償",
+      "desc": "復仇"
+    }
+  }
+}

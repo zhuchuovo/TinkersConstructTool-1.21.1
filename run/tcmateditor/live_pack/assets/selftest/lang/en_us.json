@@ -1,0 +1,11 @@
+{
+  "material.selftest.iron": "Iron",
+  "material.selftest.iron.flavor": "Ironic. He could save others from death, but not himself.",
+  "material.selftest.iron.encyclopedia": "Causes mining blocks and hitting mobs to attract nearby items.",
+  "material.selftest.ruby": "Ruby",
+  "material.selftest.ruby.flavor": "Shiny and sharp",
+  "material.selftest.ruby.encyclopedia": "A gem material with the Sharp entry.",
+  "modifier.selftest.sharp": "Sharp",
+  "modifier.selftest.sharp.flavor": "Hurts more, swings slower",
+  "modifier.selftest.sharp.description": "+2 damage and -10% attack speed per level"
+}

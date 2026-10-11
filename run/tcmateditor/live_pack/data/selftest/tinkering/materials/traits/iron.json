@@ -1,0 +1,20 @@
+{
+  "default": [
+    {
+      "name": "zhuchuovo:new_entry",
+      "level": 1
+    }
+  ],
+  "perStat": {
+    "tconstruct:skull": [
+      {
+        "name": "tconstruct:plague",
+        "level": 1
+      },
+      {
+        "name": "tconstruct:husk_disguise",
+        "level": 1
+      }
+    ]
+  }
+}

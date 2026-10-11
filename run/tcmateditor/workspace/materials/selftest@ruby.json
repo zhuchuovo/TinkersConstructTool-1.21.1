@@ -1,0 +1,162 @@
+{
+  "id": "selftest:ruby",
+  "tier": 3,
+  "sortOrder": 100,
+  "craftable": true,
+  "hidden": false,
+  "stats": {
+    "tconstruct:binding": {},
+    "tconstruct:limb": {
+      "durability": 250,
+      "draw_speed": 0.0,
+      "velocity": 0.0,
+      "accuracy": 0.0
+    },
+    "tconstruct:grip": {
+      "durability": 0.0,
+      "accuracy": 0.0,
+      "melee_damage": 0.0
+    },
+    "tconstruct:bowstring": {},
+    "tconstruct:plating_helmet": {
+      "durability": 165,
+      "armor": 2.0,
+      "toughness": 0.0,
+      "knockback_resistance": 0.0
+    },
+    "tconstruct:plating_chestplate": {
+      "durability": 240,
+      "armor": 5.0,
+      "toughness": 0.0,
+      "knockback_resistance": 0.0
+    },
+    "tconstruct:plating_leggings": {
+      "durability": 225,
+      "armor": 4.0,
+      "toughness": 0.0,
+      "knockback_resistance": 0.0
+    },
+    "tconstruct:plating_boots": {
+      "durability": 195,
+      "armor": 2.0,
+      "toughness": 0.0,
+      "knockback_resistance": 0.0
+    },
+    "tconstruct:maille": {},
+    "tconstruct:handle": {
+      "durability": 0.4,
+      "mining_speed": 0.0,
+      "melee_speed": 0.0,
+      "melee_damage": 0.0
+    }
+  },
+  "defaultTraits": [
+    {
+      "id": "selftest:sharp",
+      "level": 2
+    }
+  ],
+  "statTraits": {
+    "tconstruct:melee_harvest": []
+  },
+  "items": [
+    {
+      "ingredient": "minecraft:redstone_block",
+      "value": 1,
+      "needed": 1
+    }
+  ],
+  "fluid": {
+    "enabled": false,
+    "fluid": "",
+    "amount": 90,
+    "temperature": 800
+  },
+  "texture": {
+    "baseStyle": "rock",
+    "palette": [
+      {
+        "grey": 0,
+        "color": -16777216
+      },
+      {
+        "grey": 63,
+        "color": -14612982
+      },
+      {
+        "grey": 102,
+        "color": -12252140
+      },
+      {
+        "grey": 140,
+        "color": -10087906
+      },
+      {
+        "grey": 178,
+        "color": -7727064
+      },
+      {
+        "grey": 209,
+        "color": -4841419
+      },
+      {
+        "grey": 255,
+        "color": -2918267
+      }
+    ],
+    "effects": [
+      {
+        "type": "sparkle",
+        "region": "light",
+        "color": -5436661,
+        "strength": 0.88,
+        "scale": 3,
+        "seed": 0,
+        "enabled": true,
+        "pattern": ""
+      },
+      {
+        "type": "noise",
+        "region": "all",
+        "color": -1,
+        "strength": 0.17,
+        "scale": 16,
+        "seed": 0,
+        "enabled": true,
+        "pattern": ""
+      }
+    ],
+    "animation": {
+      "type": "rainbow",
+      "frames": 24,
+      "frametime": 1,
+      "color": -10354688,
+      "strength": 0.25,
+      "interpolate": true
+    },
+    "luminosity": 0
+  },
+  "lang": {
+    "zh_cn": {
+      "name": "红宝石",
+      "flavor": "闪耀而锋利",
+      "desc": "带有锋锐词条的宝石材料。"
+    },
+    "zh_tw": {
+      "name": "紅寶石",
+      "flavor": "閃耀而鋒利",
+      "desc": "帶有鋒銳詞條的寶石材料。"
+    },
+    "en_us": {
+      "name": "Ruby",
+      "flavor": "Shiny and sharp",
+      "desc": "A gem material with the Sharp entry."
+    },
+    "ja_jp": {
+      "name": "ルビー",
+      "flavor": "輝いて鋭い",
+      "desc": "シャープを持つ宝石素材。"
+    }
+  },
+  "textColor": ""
+}

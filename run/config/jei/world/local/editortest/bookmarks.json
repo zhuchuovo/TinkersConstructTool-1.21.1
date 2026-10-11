@@ -1,0 +1,4 @@
+[
+  {"version":2},
+  {"ingredient":{"id":"tconstruct:tool_binding","components":{"minecraft:custom_data":{"Material":"custommats:new_material"}}},"type":"item_stack","bookmarkType":"INGREDIENT"}
+]

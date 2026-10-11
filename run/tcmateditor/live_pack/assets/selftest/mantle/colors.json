@@ -1,0 +1,9 @@
+{
+  "material.selftest": {
+    "iron": "#D8D8D8",
+    "ruby": "#BA2D41"
+  },
+  "modifier.selftest": {
+    "sharp": "#FF5577"
+  }
+}

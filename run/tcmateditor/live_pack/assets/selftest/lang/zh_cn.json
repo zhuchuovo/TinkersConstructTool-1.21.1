@@ -1,0 +1,11 @@
+{
+  "material.selftest.iron": "铁",
+  "material.selftest.iron.flavor": "他铁了心要保护别人不死，却不能保护他自己，多么讽刺。",
+  "material.selftest.iron.encyclopedia": "挖掘方块与攻击生物时吸引周围物品。",
+  "material.selftest.ruby": "红宝石",
+  "material.selftest.ruby.flavor": "闪耀而锋利",
+  "material.selftest.ruby.encyclopedia": "带有锋锐词条的宝石材料。",
+  "modifier.selftest.sharp": "锋锐",
+  "modifier.selftest.sharp.flavor": "更痛，但更慢",
+  "modifier.selftest.sharp.description": "每级 +2 攻击伤害，-10% 攻击速度"
+}

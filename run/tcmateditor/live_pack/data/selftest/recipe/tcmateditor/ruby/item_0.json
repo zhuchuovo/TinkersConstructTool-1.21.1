@@ -1,0 +1,9 @@
+{
+  "type": "tconstruct:material",
+  "ingredient": {
+    "item": "minecraft:redstone_block"
+  },
+  "material": "selftest:ruby",
+  "needed": 1,
+  "value": 1
+}

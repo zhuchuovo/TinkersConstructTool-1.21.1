@@ -1,0 +1,39 @@
+{
+  "id": "selftest:sharp",
+  "color": "#FF5577",
+  "levelDisplay": "default",
+  "lines": [
+    {
+      "kind": "stat",
+      "target": "tconstruct:attack_damage",
+      "op": "add",
+      "flat": 0.0,
+      "perLevel": 1.0,
+      "slots": [
+        "mainhand"
+      ]
+    },
+    {
+      "kind": "attribute",
+      "target": "minecraft:generic.attack_speed",
+      "op": "add_value",
+      "flat": 0.0,
+      "perLevel": -0.1,
+      "slots": [
+        "mainhand"
+      ]
+    }
+  ],
+  "lang": {
+    "zh_cn": {
+      "name": "锋锐",
+      "flavor": "更痛，但更慢",
+      "desc": "每级 +2 攻击伤害，-10% 攻击速度"
+    },
+    "en_us": {
+      "name": "Sharp",
+      "flavor": "Hurts more, swings slower",
+      "desc": "+2 damage and -10% attack speed per level"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "id": "zhuchuovo:debug",
+  "modifier": "selftest:sharp",
+  "slotType": "upgrades",
+  "slotCount": 1,
+  "maxLevel": 1,
+  "allowCrystal": true,
+  "strictSlots": true,
+  "inputs": [
+    {
+      "ingredient": "minecraft:diamond",
+      "count": 1
+    },
+    {
+      "ingredient": "",
+      "count": 1
+    },
+    {
+      "ingredient": "",
+      "count": 1
+    },
+    {
+      "ingredient": "",
+      "count": 1
+    },
+    {
+      "ingredient": "",
+      "count": 1
+    }
+  ],
+  "allowTools": [
+    "#tconstruct:modifiable"
+  ],
+  "denyTools": []
+}
