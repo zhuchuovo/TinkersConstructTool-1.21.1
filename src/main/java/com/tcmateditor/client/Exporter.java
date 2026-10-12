@@ -43,7 +43,7 @@ public final class Exporter {
     displayName="Tinkers' Materials (%2$s)"
     description='''
     %3$s
-    Made with Tinkers' Material Editor, does not need it.
+    Made with Tinkers' Construct Tool, does not need it.
     '''
 
     [[dependencies.%1$s]]
@@ -99,9 +99,9 @@ public final class Exporter {
     Path readme = folder.resolve("README.txt");
     try (OutputStream out = Files.newOutputStream(readme)) {
       out.write(("""
-        Tinkers' Material Editor export
-        ================================
-        Use ONE of the two options. Both only use Tinkers' Construct formats and work without Tinkers' Material Editor.
+        Tinkers' Construct Tool export
+        ===============================
+        Use ONE of the two options. Both only use Tinkers' Construct formats and work without Tinkers' Construct Tool.
 
         A) %1$s.jar
            Put it into the mods folder (client and server). Contains everything, works in every world.

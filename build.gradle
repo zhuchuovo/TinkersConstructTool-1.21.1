@@ -8,7 +8,7 @@ plugins {
 group = 'com.tcmateditor'
 version = "${minecraft_version}-${mod_version}"
 
-base { archivesName = 'TinkersMaterialEditor' }
+base { archivesName = 'TinkersConstructTool' }
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
     withSourcesJar()
@@ -99,7 +99,7 @@ tasks.named('jar', Jar).configure {
     exclude 'com/tcmateditor/dev/**'
     manifest {
         attributes([
-            'Specification-Title': "Tinkers' Material Editor",
+            'Specification-Title': "Tinkers' Construct Tool",
             'Specification-Version': '1',
             'Implementation-Title': project.name,
             'Implementation-Version': project.version

@@ -1,4 +1,4 @@
-# Tinkers' Material Editor / 匠魂材料编辑器
+# Tinkers' Construct Tool / 匠魂材料编辑器
 
 匠魂（Tinkers' Construct 1.20.1, NeoForge）的游戏内材料编辑器。按 **Shift+Z** 打开。
 
@@ -49,21 +49,9 @@
 
 ## 版本与开发
 
-本目录是 `../TinkersConstructTool-1.21.1` 仓库的 Git 工作树，分支为 `codex/neoforge-1.20.1`。1.21.1 的主分支保留在原目录。
+本目录是 `../TinkersConstructTool-1.21.1` 仓库的 Git 工作树，分支为 `neoforge-1.20.1`。1.21.1 的主分支保留在原目录。
 
 - Minecraft **1.20.1**，NeoForge **47.1.106**，Java **17**。
 - 官方 [Tinkers' Construct 1.20.1](https://github.com/SlimeKnights/TinkersConstruct/tree/1.20.1) **3.12.1.232**，Mantle **1.11.121**；Gradle 自动获取依赖，无需旁边的 1.21.1 开发 JAR。
-- NeoForge 1.20.1 沿用 `net.minecraftforge` 包名、`META-INF/mods.toml` 和 `forge` 依赖 ID；这是该版本的正常格式。
-- 数据包与资源包均为格式 **15**；严格位置配方使用 `conditions` 下的 `forge:mod_loaded` / `forge:not` 选择原生回退配方。
-
-```powershell
-.\gradlew.bat build
-.\gradlew.bat runClient
-.\gradlew.bat runClient -PwithJei
-.\gradlew.bat runClient -PselfTest
-.\gradlew.bat runGameTestServer
-```
 
 开发运行目录为 `run-neoforge-1.20.1/`，与原来的 1.21.1 开发存档隔离。可安装的混淆 JAR 和源码 JAR 位于 `build/libs/`。游戏自检结果写入开发目录的 `tcmateditor/selftest.txt`。
-
-专服 GameTest 使用独立的 `server-gametest/` 子目录。要同时验证导出的无代码模组，先运行客户端自检，将生成的 `tinkers_materials_custommats.jar` 复制到 `server-gametest/mods/`，再运行 `runGameTestServer -PexportGameTest`。开发测试类不会打入发布 JAR。
