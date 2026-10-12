@@ -43,7 +43,7 @@ public final class LivePack {
       Files.createDirectories(root);
       Path mcmeta = root.resolve("pack.mcmeta");
       if (!Files.exists(mcmeta)) {
-        Files.writeString(mcmeta, mcmeta("Tinkers' Material Editor live pack", 48), StandardCharsets.UTF_8);
+        Files.writeString(mcmeta, mcmeta("Tinkers' Construct Tool live pack", 48), StandardCharsets.UTF_8);
       }
     } catch (IOException e) {
       TCMatEditor.LOG.error("Failed to create live pack folder", e);
@@ -57,7 +57,7 @@ public final class LivePack {
   public static void addPackFinders(AddPackFindersEvent event) {
     ensureExists();
     Path root = EditorPaths.livePack();
-    PackLocationInfo info = new PackLocationInfo(PACK_ID, Component.literal("Tinkers' Material Editor"), PackSource.BUILT_IN, Optional.empty());
+    PackLocationInfo info = new PackLocationInfo(PACK_ID, Component.literal("Tinkers' Construct Tool"), PackSource.BUILT_IN, Optional.empty());
     Pack pack = Pack.readMetaAndCreate(info, new PathPackResources.PathResourcesSupplier(root), event.getPackType(),
       new PackSelectionConfig(true, Pack.Position.TOP, false));
     if (pack != null) {

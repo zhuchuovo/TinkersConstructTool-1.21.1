@@ -9,7 +9,7 @@ group = 'com.tcmateditor'
 version = "${minecraft_version}-${mod_version}"
 
 base {
-    archivesName = 'TinkersMaterialEditor'
+    archivesName = 'TinkersConstructTool'
 }
 
 java {
@@ -114,7 +114,7 @@ tasks.named('processResources', ProcessResources).configure {
 tasks.named('jar', Jar).configure {
     manifest {
         attributes([
-            'Specification-Title': "Tinkers' Material Editor",
+            'Specification-Title': "Tinkers' Construct Tool",
             'Specification-Version': '1',
             'Implementation-Title': project.name,
             'Implementation-Version': project.version

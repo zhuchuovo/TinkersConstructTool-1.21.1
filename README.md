@@ -1,4 +1,4 @@
-# Tinkers' Material Editor / 匠魂材料编辑器
+# Tinkers' Construct Tool / 匠魂材料编辑器
 
 匠魂（Tinkers' Construct 1.21.1, NeoForge）的游戏内材料编辑器。按 **Shift+Z** 打开。
 

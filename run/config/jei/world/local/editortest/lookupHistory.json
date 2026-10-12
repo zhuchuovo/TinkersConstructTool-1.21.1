@@ -1,8 +1,0 @@
-[
-  {"version":1},
-  {"ingredient":{"id":"tconstruct:tool_binding","components":{"minecraft:custom_data":{"Material":"custommats:new_material"}}},"type":"item_stack","bookmarkType":"INGREDIENT"},
-  {"ingredient":{"id":"tconstruct:repair_kit","components":{"minecraft:custom_data":{"Material":"custommats:new_material"}}},"type":"item_stack","bookmarkType":"INGREDIENT"},
-  {"ingredient":{"id":"tconstruct:broad_blade","components":{"minecraft:custom_data":{"Material":"custommats:new_material"}}},"type":"item_stack","bookmarkType":"INGREDIENT"},
-  {"ingredient":{"id":"tconstruct:pick_head","components":{"minecraft:custom_data":{"Material":"custommats:new_material"}}},"type":"item_stack","bookmarkType":"INGREDIENT"},
-  {"ingredient":{"id":"tconstruct:large_plate","components":{"minecraft:custom_data":{"Material":"custommats:new_material"}}},"type":"item_stack","bookmarkType":"INGREDIENT"}
-]

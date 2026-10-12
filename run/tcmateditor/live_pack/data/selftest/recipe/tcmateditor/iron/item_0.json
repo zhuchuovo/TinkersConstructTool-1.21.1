@@ -1,9 +1,0 @@
-{
-  "type": "tconstruct:material",
-  "ingredient": {
-    "item": "minecraft:iron_nugget"
-  },
-  "material": "selftest:iron",
-  "needed": 9,
-  "value": 1
-}

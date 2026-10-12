@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Specification-Title: Tinkers' Material Editor
-Specification-Version: 1
-Implementation-Title: tcmateditor
-Implementation-Version: 1.21.1-1.0.0
-

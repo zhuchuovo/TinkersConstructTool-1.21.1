@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tinkers' Material Editor.
+ * Tinkers' Construct Tool.
  * <p>
  * The mod is only an editor: every material it creates is written as plain Tinkers' Construct
  * data pack / resource pack content, so exported materials work without this mod installed.

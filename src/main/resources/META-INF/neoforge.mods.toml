@@ -5,7 +5,7 @@ license="MIT"
 [[mods]]
 modId="tcmateditor"
 version="${version}"
-displayName="Tinkers' Material Editor"
+displayName="Tinkers' Construct Tool"
 authors="nizabushangtianm"
 description='''
 In-game material editor for Tinkers' Construct (Shift+Z).
