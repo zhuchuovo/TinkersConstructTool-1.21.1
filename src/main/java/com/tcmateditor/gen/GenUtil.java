@@ -74,6 +74,10 @@ public final class GenUtil {
     return isKnown(ref, BuiltInRegistries.FLUID, BuiltInRegistries.FLUID.getDefaultKey());
   }
 
+  public static boolean isKnownFluid(String ref, Workspace workspace) {
+    return isKnownFluid(ref) || (isValidRef(ref) && !ref.startsWith("#") && workspace.findFluid(fullId(ref)) != null);
+  }
+
   private static boolean isKnown(String ref, Registry<?> registry, ResourceLocation empty) {
     if (!isValidRef(ref)) {
       return false;

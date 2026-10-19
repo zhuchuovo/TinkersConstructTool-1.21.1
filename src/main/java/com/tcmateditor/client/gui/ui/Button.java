@@ -23,6 +23,13 @@ public class Button extends UIElement {
   public int dotColor = 0;
   /** Right click handler */
   public Runnable onRightClick;
+  /** Pixel icon for the settings button, independent of the selected font. */
+  private boolean gearIcon;
+
+  public Button gearIcon() {
+    gearIcon = true;
+    return this;
+  }
 
   public Button(Component text, Runnable onClick) {
     this(() -> text, onClick);
@@ -117,6 +124,19 @@ public class Button extends UIElement {
     }
     if (style == Style.TAB && sel) {
       g.fill(x + 3, y + h - 2, x + w - 3, y + h, Theme.ACCENT);
+    }
+    if (gearIcon) {
+      int cx = x + w / 2;
+      int cy = y + h / 2;
+      g.fill(cx - 3, cy - 4, cx + 3, cy + 4, color);
+      g.fill(cx - 4, cy - 3, cx + 4, cy + 3, color);
+      g.fill(cx - 1, cy - 6, cx + 1, cy + 6, color);
+      g.fill(cx - 6, cy - 1, cx + 6, cy + 1, color);
+      for (int dx : new int[] {-5, 3}) {
+        for (int dy : new int[] {-5, 3}) g.fill(cx + dx, cy + dy, cx + dx + 2, cy + dy + 2, color);
+      }
+      g.fill(cx - 2, cy - 2, cx + 2, cy + 2, fill);
+      return;
     }
     Component value = text.get();
     int textW = Theme.font().width(value) + (dotColor != 0 ? 8 : 0);

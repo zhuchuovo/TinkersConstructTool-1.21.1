@@ -11,6 +11,7 @@ import com.tcmateditor.client.MaterialImporter;
 import com.tcmateditor.client.gui.pages.EntryEffectsPage;
 import com.tcmateditor.client.gui.pages.EntryInfoPage;
 import com.tcmateditor.client.gui.pages.GeneralPage;
+import com.tcmateditor.client.gui.pages.FluidPage;
 import com.tcmateditor.client.gui.pages.InfoPage;
 import com.tcmateditor.client.gui.pages.Page;
 import com.tcmateditor.client.gui.pages.StatsPage;
@@ -31,6 +32,7 @@ import com.tcmateditor.client.gui.ui.UIGroup;
 import com.tcmateditor.client.texture.Colors;
 import com.tcmateditor.client.texture.PartTextureLibrary;
 import com.tcmateditor.model.EntryDoc;
+import com.tcmateditor.model.FluidDoc;
 import com.tcmateditor.model.LangText;
 import com.tcmateditor.model.MaterialDoc;
 import com.tcmateditor.model.TextureDoc;
@@ -40,6 +42,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
+import net.neoforged.fml.ModList;
 
 import java.io.IOException;
 import java.util.List;
@@ -72,6 +75,7 @@ public class EditorScreen extends Screen {
     UI.reset();
     PartTextureLibrary.clear();
     PreviewCache.invalidate();
+    FluidPreviewCache.invalidate();
     EditorSession.workspace();
     rebuild();
   }
@@ -126,7 +130,14 @@ public class EditorScreen extends Screen {
   private void buildTopBar() {
     int x = winX + 8;
     Component titleText = Component.literal("◆ ").withColor(Theme.ACCENT).append(Component.translatable("tcmateditor.title").withColor(Theme.TEXT));
-    root.add(new Label(titleText, Theme.TEXT)).at(x, winY + 7);
+    int tabsWidth = 0;
+    for (Mode mode : Mode.values()) tabsWidth += font.width(Names.tr("mode." + mode.name().toLowerCase(Locale.ROOT))) + 14;
+    int actionsWidth = Math.max(46, font.width(Names.tr(ClientApply.isWaiting() ? "button.applying" : "button.apply")) + 12)
+      + font.width(Names.tr("button.export")) + 12 + 48;
+    if (font.width(titleText) + tabsWidth + actionsWidth + 32 > winW) {
+      titleText = Component.literal("◆").withColor(Theme.ACCENT);
+    }
+    root.add(new Label(titleText, Theme.TEXT)).at(x, winY + 7).tooltip(Component.translatable("tcmateditor.title"));
     x += font.width(titleText) + 12;
     for (Mode mode : Mode.values()) {
       Button tab = new Button(Names.tr("mode." + mode.name().toLowerCase(Locale.ROOT)), () -> {
@@ -149,7 +160,7 @@ public class EditorScreen extends Screen {
     export.tooltip(Names.tr("hint.export"));
     right -= export.w + 4;
     root.add(export).at(right, winY + 3);
-    Button help = new Button(Component.literal("?"), Dialogs::help).size(16, 16);
+    Button help = new Button(Component.empty(), Dialogs::help).gearIcon().size(16, 16);
     help.tooltip(Names.tr("hint.help"));
     right -= 20;
     root.add(help).at(right, winY + 3);
@@ -235,6 +246,16 @@ public class EditorScreen extends Screen {
           y += 23;
         }
       }
+      case FLUIDS -> {
+        for (FluidDoc doc : workspace.fluids) {
+          if (!matches(query, doc.displayName(lang), doc.id)) continue;
+          list.add(new ListRow(() -> Component.literal(doc.displayName(lang)), () -> doc.id, doc::colorInt, () -> EditorSession.fluid == doc, () -> {
+            EditorSession.fluid = doc;
+            UI.requestRebuild();
+          })).at(2, y).size(list.w - 8, 22);
+          y += 23;
+        }
+      }
     }
     list.contentHeight = y;
     list.layoutChildren();
@@ -300,6 +321,7 @@ public class EditorScreen extends Screen {
       case MATERIALS -> List.of("general", "stats", "traits", "texture", "info");
       case ENTRIES -> List.of("effects", "info");
       case UPGRADES -> List.of("recipe", "tools");
+      case FLUIDS -> List.of("general", "texture", "info");
     };
   }
 
@@ -308,6 +330,7 @@ public class EditorScreen extends Screen {
       case MATERIALS -> EditorSession.materialTab;
       case ENTRIES -> EditorSession.entryTab;
       case UPGRADES -> EditorSession.upgradeTab;
+      case FLUIDS -> EditorSession.fluidTab;
     };
   }
 
@@ -316,6 +339,7 @@ public class EditorScreen extends Screen {
       case MATERIALS -> EditorSession.materialTab = tab;
       case ENTRIES -> EditorSession.entryTab = tab;
       case UPGRADES -> EditorSession.upgradeTab = tab;
+      case FLUIDS -> EditorSession.fluidTab = tab;
     }
   }
 
@@ -333,6 +357,9 @@ public class EditorScreen extends Screen {
     if (EditorSession.upgrade == null && !workspace.upgrades.isEmpty()) {
       EditorSession.upgrade = workspace.upgrades.get(0);
     }
+    if (EditorSession.fluid == null || !workspace.fluids.contains(EditorSession.fluid)) {
+      EditorSession.fluid = workspace.fluids.isEmpty() ? null : workspace.fluids.get(0);
+    }
   }
 
   private void buildMain() {
@@ -346,10 +373,12 @@ public class EditorScreen extends Screen {
     MaterialDoc material = EditorSession.material;
     EntryDoc entry = EditorSession.entry;
     UpgradeDoc upgrade = EditorSession.upgrade;
+    FluidDoc fluid = EditorSession.fluid;
     boolean empty = switch (mode) {
       case MATERIALS -> material == null;
       case ENTRIES -> entry == null;
       case UPGRADES -> upgrade == null;
+      case FLUIDS -> fluid == null;
     };
 
     if (empty) {
@@ -373,16 +402,19 @@ public class EditorScreen extends Screen {
       case MATERIALS -> () -> Component.literal(material.displayName(EditorSession.uiLanguage()));
       case ENTRIES -> () -> Component.literal(entry.displayName(EditorSession.uiLanguage()));
       case UPGRADES -> () -> upgradeName(upgrade);
+      case FLUIDS -> () -> Component.literal(fluid.displayName(EditorSession.uiLanguage()));
     };
     java.util.function.Supplier<Integer> nameColor = switch (mode) {
       case MATERIALS -> material::nameColor;
       case ENTRIES -> entry::colorInt;
       case UPGRADES -> () -> upgradeColor(upgrade);
+      case FLUIDS -> fluid::colorInt;
     };
     java.util.function.Supplier<String> idText = switch (mode) {
       case MATERIALS -> () -> material.id;
       case ENTRIES -> () -> entry.id;
       case UPGRADES -> () -> upgrade.id;
+      case FLUIDS -> () -> fluid.id;
     };
     root.add(new Label(nameText, Theme.TEXT).color(nameColor)).at(x, mainY + 7).size(mainW - 150, 9);
     root.add(new Label(() -> Component.literal(idText.get()), Theme.TEXT_FAINT)).at(x, mainY + 18).size(mainW - 150, 9);
@@ -425,6 +457,7 @@ public class EditorScreen extends Screen {
       };
       case ENTRIES -> tab == 1 ? new EntryInfoPage(entry) : new EntryEffectsPage(entry);
       case UPGRADES -> tab == 1 ? new UpgradeToolsPage(upgrade) : new UpgradeRecipePage(upgrade);
+      case FLUIDS -> tab == 1 ? new TexturePage(fluid) : new FluidPage(fluid, tab == 2);
     };
     contentKey = mode.name() + ":" + tab;
     try {
@@ -443,6 +476,7 @@ public class EditorScreen extends Screen {
       case MATERIALS -> newMaterial();
       case ENTRIES -> newEntry();
       case UPGRADES -> newUpgrade(null);
+      case FLUIDS -> newFluid();
     }
   }
 
@@ -474,6 +508,20 @@ public class EditorScreen extends Screen {
     workspace.entries.add(doc);
     EditorSession.entry = doc;
     EditorSession.entryTab = 0;
+    Page.rebuild();
+  }
+
+  private void newFluid() {
+    Workspace workspace = EditorSession.workspace();
+    FluidDoc doc = new FluidDoc();
+    doc.id = workspace.freeFluidId(workspace.namespace, "new_fluid");
+    doc.color = Colors.hex(Colors.fromHsv(RANDOM.nextFloat(), 0.6f, 0.95f, 255));
+    doc.generatedTexture = true;
+    doc.texture = FluidDoc.createTexture(doc.baseColorInt());
+    doc.lang.put(EditorSession.uiLanguage(), new LangText(Names.tr("default.fluid_name").getString(), "", ""));
+    workspace.fluids.add(doc);
+    EditorSession.fluid = doc;
+    EditorSession.fluidTab = 0;
     Page.rebuild();
   }
 
@@ -544,6 +592,14 @@ public class EditorScreen extends Screen {
           EditorSession.upgrade = copy;
         }
       }
+      case FLUIDS -> {
+        if (EditorSession.fluid != null) {
+          FluidDoc copy = EditorSession.fluid.copy();
+          copy.id = workspace.freeFluidId(copy.namespace(), copy.path() + "_copy");
+          workspace.fluids.add(copy);
+          EditorSession.fluid = copy;
+        }
+      }
     }
     Page.rebuild();
   }
@@ -555,6 +611,7 @@ public class EditorScreen extends Screen {
         case MATERIALS -> EditorSession.material = removeAndNext(workspace.materials, EditorSession.material);
         case ENTRIES -> EditorSession.entry = removeAndNext(workspace.entries, EditorSession.entry);
         case UPGRADES -> EditorSession.upgrade = removeAndNext(workspace.upgrades, EditorSession.upgrade);
+        case FLUIDS -> EditorSession.fluid = removeAndNext(workspace.fluids, EditorSession.fluid);
       }
       Page.rebuild();
     });
@@ -646,7 +703,6 @@ public class EditorScreen extends Screen {
     int y = winY + winH - STATUS_H + 3;
     long age = System.currentTimeMillis() - EditorSession.statusTime;
     int color = age > 10000 ? Theme.TEXT_FAINT : EditorSession.statusColor;
-    Theme.ellipsis(g, EditorSession.status, winX + 8, y, winW / 2, color);
     long now = System.currentTimeMillis();
     if (now - assetsCheckTime > 600) {
       assetsCheckTime = now;
@@ -656,13 +712,18 @@ public class EditorScreen extends Screen {
         assetsDirty = false;
       }
     }
-    Component right = assetsDirty
+    Component right = EditorSession.mode == Mode.FLUIDS
+      ? Names.tr(ModList.get().isLoaded("kubejs") ? "status.fluid_restart" : "status.fluid_export_only").withColor(Theme.WARNING)
+      : assetsDirty
       ? Names.tr("status.assets_pending").withColor(Theme.WARNING)
       : !EditorSession.autoApply && ClientApply.hasUnappliedEdits()
       ? Names.tr("status.data_pending").withColor(Theme.WARNING)
       : Names.tr("status.shortcuts").withColor(Theme.TEXT_FAINT);
     int rw = font.width(right);
-    Theme.text(g, right, winX + winW - rw - 8, y, Theme.TEXT_FAINT);
+    int rightWidth = Math.min(rw, winW - 16);
+    int rightX = winX + winW - rightWidth - 8;
+    if (rightX - winX > 20) Theme.ellipsis(g, EditorSession.status, winX + 8, y, rightX - winX - 16, color);
+    Theme.ellipsis(g, right, rightX, y, rightWidth, Theme.TEXT_FAINT);
   }
 
   /* Input */

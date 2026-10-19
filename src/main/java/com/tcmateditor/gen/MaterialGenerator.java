@@ -17,6 +17,10 @@ public final class MaterialGenerator {
   private MaterialGenerator() {}
 
   public static void generate(MaterialDoc doc, Workspace workspace, Map<String,String> files, List<Problem> problems) {
+    generate(doc, workspace, files, problems, false);
+  }
+
+  public static void generate(MaterialDoc doc, Workspace workspace, Map<String,String> files, List<Problem> problems, boolean export) {
     String ns = doc.namespace();
     String path = doc.path();
     String base = "data/" + ns + "/tinkering/materials/";
@@ -75,7 +79,8 @@ public final class MaterialGenerator {
 
     // casting and melting
     MaterialDoc.FluidRef fluid = doc.fluid;
-    if (fluid.enabled && fluid.fluid != null && !fluid.fluid.isBlank() && !GenUtil.isKnownFluid(fluid.fluid)) {
+    boolean knownFluid = export ? GenUtil.isKnownFluid(fluid.fluid, workspace) : GenUtil.isKnownFluid(fluid.fluid);
+    if (fluid.enabled && fluid.fluid != null && !fluid.fluid.isBlank() && !knownFluid) {
       problems.add(new Problem(doc.id, "unknown_fluid", fluid.fluid));
     } else if (fluid.enabled && GenUtil.isValidRef(fluid.fluid)) {
       int amount = Math.max(1, fluid.amount);

@@ -2,6 +2,7 @@ package com.tcmateditor.client.gui.pages;
 
 import com.tcmateditor.EditorPaths;
 import com.tcmateditor.client.gui.Form;
+import com.tcmateditor.client.gui.FluidPreviewCache;
 import com.tcmateditor.client.gui.Names;
 import com.tcmateditor.client.gui.PreviewCache;
 import com.tcmateditor.client.gui.PreviewCache.Preview;
@@ -18,6 +19,8 @@ import com.tcmateditor.client.gui.ui.Toggle;
 import com.tcmateditor.client.gui.ui.UIElement;
 import com.tcmateditor.client.texture.PartTextureLibrary;
 import com.tcmateditor.client.texture.TextureEngine;
+import com.tcmateditor.client.texture.FluidTextureEngine;
+import com.tcmateditor.model.FluidDoc;
 import com.tcmateditor.model.MaterialDoc;
 import com.tcmateditor.model.TextureDoc;
 import com.tcmateditor.model.TextureDoc.Effect;
@@ -39,39 +42,65 @@ public class TexturePage implements Page {
   private static int quickColor = 0;
 
   private final MaterialDoc doc;
+  private final FluidDoc fluid;
   private PaletteBar bar;
 
   public TexturePage(MaterialDoc doc) {
     this.doc = doc;
+    this.fluid = null;
+  }
+
+  public TexturePage(FluidDoc fluid) {
+    this.doc = null;
+    this.fluid = fluid;
+    if (fluid.texture == null) fluid.texture = FluidDoc.createTexture(fluid.baseColorInt());
   }
 
   private TextureDoc tex() {
-    return doc.texture;
+    return fluid != null ? fluid.texture : doc.texture;
   }
 
   @Override
   public void build(Form form) {
     TextureDoc texture = tex();
-    form.hint(Names.tr("page.texture.hint"));
+    form.hint(Names.tr(fluid != null ? "page.fluid_texture.hint" : "page.texture.hint"));
 
-    // previews
-    int x = 0;
-    int rowHeight = 0;
-    for (Preview preview : PreviewCache.PREVIEWS) {
-      boolean composite = preview.layers().size() > 1;
-      int size = composite ? 48 : 32;
-      if (x + size > form.width()) {
-        form.next(rowHeight);
-        x = 0;
-        rowHeight = 0;
+    if (fluid != null) {
+      form.row(Names.tr("label.generated_fluid_texture"), new Toggle(Component.empty(), () -> fluid.generatedTexture, value -> {
+        fluid.generatedTexture = value;
+        Page.rebuild();
+      }));
+      if (!fluid.generatedTexture) {
+        form.hint(Names.tr("hint.fluid_texture_disabled"));
+        form.finish();
+        return;
       }
-      SpritePreview sprite = new SpritePreview(preview.key(), () -> PreviewCache.get(tex(), preview), () -> tex().animation.frametime, size);
-      sprite.tooltip(preview.name());
-      form.place(sprite, x);
-      x += size + 4;
-      rowHeight = Math.max(rowHeight, size);
+      for (boolean flowing : new boolean[] {false, true}) {
+        int px = flowing ? 64 : 0;
+        form.place(new SpritePreview("fluid_" + (flowing ? "flow" : "still"), () -> FluidPreviewCache.get(fluid, flowing), () -> tex().animation.frametime, 48), px)
+          .tooltip(Names.tr(flowing ? "label.flowing_texture" : "label.still_texture"));
+        form.place(new Label(Names.tr(flowing ? "label.flowing_texture" : "label.still_texture"), Theme.TEXT_DIM), px).at(form.pad + px, form.y + 52);
+      }
+      form.next(64);
+    } else {
+      int x = 0;
+      int rowHeight = 0;
+      for (Preview preview : PreviewCache.PREVIEWS) {
+        boolean composite = preview.layers().size() > 1;
+        int size = composite ? 48 : 32;
+        if (x + size > form.width()) {
+          form.next(rowHeight);
+          x = 0;
+          rowHeight = 0;
+        }
+        SpritePreview sprite = new SpritePreview(preview.key(), () -> PreviewCache.get(tex(), preview), () -> tex().animation.frametime, size);
+        sprite.tooltip(preview.name());
+        form.place(sprite, x);
+        x += size + 4;
+        rowHeight = Math.max(rowHeight, size);
+      }
+      form.next(rowHeight);
     }
-    form.next(rowHeight);
 
     // palette
     form.header(Names.tr("section.palette"));
@@ -122,12 +151,25 @@ public class TexturePage implements Page {
 
     // style
     form.header(Names.tr("section.style"));
-    form.row(Names.tr("label.base_style"), new Dropdown<>(STYLES, s -> Names.tr("style." + (s.isEmpty() ? "none" : s)), () -> texture.baseStyle, s -> {
-      texture.baseStyle = s;
-      Page.changed();
-    }, 110)).tooltip(Names.tr("hint.base_style"));
-    form.row(Names.tr("label.luminosity"), new Slider(0, 15, true, () -> texture.luminosity, v -> {
-      texture.luminosity = (int) v;
+    if (fluid != null) {
+      form.row(Names.tr("label.base_style"), new Dropdown<>(FluidTextureEngine.STYLES, style -> Names.tr("fluid_style." + style), () -> fluid.textureStyle, style -> {
+        fluid.textureStyle = style;
+        Page.changed();
+      }, 110));
+      form.row(Names.tr("label.scale"), new NumberField(fluid.textureScale, true, 1, 8, 1, 50)
+        .onValue(value -> { fluid.textureScale = (int) value; Page.changed(); }));
+      form.row(Names.tr("label.seed"), new NumberField(fluid.textureSeed, true, 0, 9999, 1, 50)
+        .onValue(value -> { fluid.textureSeed = (int) value; Page.changed(); }));
+      form.row(Names.tr("label.opacity"), new Slider(0, 255, true, () -> fluid.opacity, value -> { fluid.opacity = (int) value; Page.changed(); }, 130));
+    } else {
+      form.row(Names.tr("label.base_style"), new Dropdown<>(STYLES, s -> Names.tr("style." + (s.isEmpty() ? "none" : s)), () -> texture.baseStyle, s -> {
+        texture.baseStyle = s;
+        Page.changed();
+      }, 110)).tooltip(Names.tr("hint.base_style"));
+    }
+    form.row(Names.tr("label.luminosity"), new Slider(0, 15, true, () -> fluid != null ? fluid.lightLevel : texture.luminosity, v -> {
+      if (fluid != null) fluid.lightLevel = (int) v;
+      else texture.luminosity = (int) v;
       Page.changed();
     }, 130)).tooltip(Names.tr("hint.luminosity"));
 
@@ -148,6 +190,7 @@ public class TexturePage implements Page {
         Files.createDirectories(EditorPaths.patterns());
       } catch (IOException ignored) {}
       PartTextureLibrary.clear();
+      FluidPreviewCache.invalidate();
       Util.getPlatform().openFile(EditorPaths.patterns().toFile());
     }).fit(), add.w + 4).tooltip(Names.tr("hint.open_patterns"));
     form.next(16);
@@ -167,7 +210,7 @@ public class TexturePage implements Page {
       form.row(Names.tr("label.strength"), new Slider(0, 1, false, () -> animation.strength, v -> { animation.strength = (float) v; Page.changed(); }, 130));
       form.row(Names.tr("label.interpolate"), new Toggle(Component.empty(), () -> animation.interpolate, v -> { animation.interpolate = v; Page.changed(); }))
         .tooltip(Names.tr("hint.interpolate"));
-      form.hint(Names.tr("hint.animation_armor"));
+      if (fluid == null) form.hint(Names.tr("hint.animation_armor"));
     }
     form.finish();
   }

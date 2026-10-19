@@ -9,8 +9,11 @@ import com.tcmateditor.client.texture.PartTextureLibrary;
 import com.tcmateditor.client.texture.PartTextureLibrary.PartInfo;
 import com.tcmateditor.client.texture.Sprite;
 import com.tcmateditor.client.texture.TextureEngine;
+import com.tcmateditor.client.texture.FluidTextureEngine;
 import com.tcmateditor.gen.EntryGenerator;
+import com.tcmateditor.gen.GenUtil;
 import com.tcmateditor.model.EntryDoc;
+import com.tcmateditor.model.FluidDoc;
 import com.tcmateditor.model.LangText;
 import com.tcmateditor.model.Languages;
 import com.tcmateditor.model.MaterialDoc;
@@ -38,6 +41,14 @@ public final class AssetGenerator {
 
   /** Generates every asset file keyed by pack relative path */
   public static Map<String,byte[]> generate(Workspace workspace) {
+    return generate(workspace, false);
+  }
+
+  public static Map<String,byte[]> generateForExport(Workspace workspace) {
+    return generate(workspace, true);
+  }
+
+  private static Map<String,byte[]> generate(Workspace workspace, boolean export) {
     Map<String,byte[]> files = new TreeMap<>();
     // namespace -> language -> key -> text
     Map<String,Map<String,Map<String,String>>> lang = new TreeMap<>();
@@ -92,6 +103,28 @@ public final class AssetGenerator {
       JsonObject modifierColors = colors.get(ns).has("modifier." + ns) ? colors.get(ns).getAsJsonObject("modifier." + ns) : new JsonObject();
       modifierColors.addProperty(path, Colors.hex(doc.colorInt()));
       colors.get(ns).add("modifier." + ns, modifierColors);
+    }
+
+    for (FluidDoc doc : workspace.fluids) {
+      if (!Workspace.isValidId(doc.id)) continue;
+      String ns = doc.namespace();
+      String path = doc.path();
+      addLang(lang, ns, doc.translationKey(), doc.lang, text -> text.name, doc.displayName(Languages.EN));
+      addLang(lang, ns, "block." + ns + "." + path.replace('/', '.'), doc.lang, text -> text.name, doc.displayName(Languages.EN));
+      for (String code : Languages.CODES) {
+        String name = doc.displayName(code);
+        String bucketName = switch (code) {
+          case "zh_cn", "zh_tw" -> name + "桶";
+          case "ja_jp" -> name + "入りバケツ";
+          default -> name + " Bucket";
+        };
+        lang.computeIfAbsent(ns, n -> new TreeMap<>()).computeIfAbsent(code, c -> new LinkedHashMap<>())
+          .put("item." + ns + "." + path.replace('/', '.') + "_bucket", bucketName);
+      }
+      if (doc.generatedTexture) generateFluidTextures(doc, files);
+      // Live resource reload cannot load models for fluids that have not been registered yet.
+      if (!export && !GenUtil.isKnownFluid(doc.id)) continue;
+      generateFluidModels(doc, files);
     }
 
     for (Map.Entry<String,Map<String,Map<String,String>>> nsEntry : lang.entrySet()) {
@@ -253,11 +286,83 @@ public final class AssetGenerator {
     }
   }
 
+  private static void generateFluidTextures(FluidDoc doc, Map<String,byte[]> files) {
+    for (boolean flowing : new boolean[] {false, true}) {
+      ResourceLocation id = ResourceLocation.parse(flowing ? doc.flowingTextureId() : doc.stillTextureId());
+      String path = "assets/" + id.getNamespace() + "/textures/" + id.getPath() + ".png";
+      Sprite sprite = FluidTextureEngine.render(doc, flowing, PartTextureLibrary::pattern);
+      try {
+        files.put(path, png(sprite));
+      } catch (IOException e) {
+        throw new IllegalStateException("Cannot encode fluid texture " + id, e);
+      }
+      if (sprite.isAnimated()) {
+        JsonObject animation = new JsonObject();
+        animation.addProperty("width", sprite.width());
+        animation.addProperty("height", sprite.width());
+        animation.addProperty("frametime", doc.texture.animation.frametime);
+        animation.addProperty("interpolate", doc.texture.animation.interpolate);
+        JsonObject meta = new JsonObject();
+        meta.add("animation", animation);
+        files.put(path + ".mcmeta", json(meta));
+      }
+      // KubeJS 7 renders these IDs, not the inputs passed to stillTexture/flowingTexture.
+      // Supply them directly so resource packs and the live pack work with its startup script.
+      String kubePath = kubeFluidTexturePath(doc, flowing);
+      files.put(kubePath, files.get(path));
+      if (files.containsKey(path + ".mcmeta")) {
+        files.put(kubePath + ".mcmeta", files.get(path + ".mcmeta"));
+      }
+    }
+  }
+
+  public static String kubeFluidTexturePath(FluidDoc doc, boolean flowing) {
+    return "assets/" + doc.namespace() + "/textures/block/generated/" + doc.path() + (flowing ? "_flow" : "_still") + ".png";
+  }
+
+  /** Models skipped before registration must be available on the first reload after a restart. */
+  public static Map<String,byte[]> registeredFluidModels(Workspace workspace) {
+    Map<String,byte[]> files = new TreeMap<>();
+    for (FluidDoc doc : workspace.fluids) {
+      if (Workspace.isValidId(doc.id) && GenUtil.isKnownFluid(doc.id)) {
+        generateFluidModels(doc, files);
+      }
+    }
+    return files;
+  }
+
+  private static void generateFluidModels(FluidDoc doc, Map<String,byte[]> files) {
+    String ns = doc.namespace();
+    String path = doc.path();
+    if (doc.bucket) {
+      JsonObject model = new JsonObject();
+      model.addProperty("parent", "neoforge:item/bucket");
+      model.addProperty("loader", "tconstruct:fluid_container");
+      model.addProperty("fluid", doc.id);
+      files.put("assets/" + ns + "/models/item/" + path + "_bucket.json", json(model));
+    }
+    if (doc.block) {
+      JsonObject blockModel = new JsonObject();
+      JsonObject textures = new JsonObject();
+      textures.addProperty("particle", doc.stillTextureId());
+      blockModel.add("textures", textures);
+      files.put("assets/" + ns + "/models/block/" + path + ".json", json(blockModel));
+      JsonObject state = new JsonObject();
+      JsonObject variants = new JsonObject();
+      JsonObject variant = new JsonObject();
+      variant.addProperty("model", ns + ":block/" + path);
+      variants.add("", variant);
+      state.add("variants", variants);
+      files.put("assets/" + ns + "/blockstates/" + path + ".json", json(state));
+    }
+  }
+
   /* Signature */
 
   /** Text describing everything assets depend on, used to skip resource reloads when nothing visual changed */
   public static String signature(Workspace workspace) {
     JsonObject json = new JsonObject();
+    json.addProperty("format", 2);
     for (MaterialDoc doc : workspace.materials) {
       JsonObject material = new JsonObject();
       material.add("texture", Workspace.GSON.toJsonTree(doc.texture));
@@ -272,6 +377,10 @@ public final class AssetGenerator {
       entry.add("lang", Workspace.GSON.toJsonTree(doc.lang));
       entry.addProperty("color", doc.color);
       json.add("e:" + doc.id, entry);
+    }
+    for (FluidDoc doc : workspace.fluids) {
+      json.add("f:" + doc.id, Workspace.GSON.toJsonTree(doc));
+      json.addProperty("registered:" + doc.id, GenUtil.isKnownFluid(doc.id));
     }
     json.addProperty("parts", PartTextureLibrary.parts().size());
     return json.toString();

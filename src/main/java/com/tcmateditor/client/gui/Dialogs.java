@@ -7,6 +7,7 @@ import com.tcmateditor.client.UiLanguage;
 import com.tcmateditor.client.gui.ui.Button;
 import com.tcmateditor.client.gui.ui.Label;
 import com.tcmateditor.client.gui.ui.Popup;
+import com.tcmateditor.client.gui.ui.ScrollView;
 import com.tcmateditor.client.gui.ui.TextField;
 import com.tcmateditor.client.gui.ui.UI;
 import com.tcmateditor.gen.DataGenerator.Problem;
@@ -61,33 +62,49 @@ public final class Dialogs {
     int width = Math.min(320, screenW() - 20);
     popup.w = width;
     popup.add(new Label(Names.tr("export.title"), Theme.ACCENT)).at(10, 10);
-    int y = 26;
+    ScrollView body = popup.add(new ScrollView());
+    body.at(0, 24).size(width, 0);
+    int y = 2;
     String jar = result.modJar().getFileName().toString();
     String data = result.dataPack().getFileName().toString();
     String resources = result.resourcePack().getFileName().toString();
-    for (Component text : new Component[] { Names.tr("export.jar", jar), Names.tr("export.packs", data, resources) }) {
-      Label line = popup.add(new Label(Component.literal("• ").append(text), Theme.TEXT).wrap(width - 20));
+    List<Component> exported = new java.util.ArrayList<>(List.of(Names.tr("export.jar", jar), Names.tr("export.packs", data, resources)));
+    if (result.fluidScript() != null) {
+      exported.add(Names.tr("export.fluid_script", result.fluidScript().getFileName().toString()));
+    }
+    if (result.kubeAssets() != null) {
+      exported.add(Names.tr("export.fluid_assets", result.kubeAssets().getFileName().toString()));
+    }
+    for (Component text : exported) {
+      Label line = body.add(new Label(Component.literal("• ").append(text), Theme.TEXT).wrap(width - 24));
       line.at(10, y);
       y += line.h + 4;
+    }
+    if (result.fluidScript() != null) {
+      Label note = body.add(new Label(Names.tr("export.fluids_note"), Theme.WARNING).wrap(width - 24));
+      note.at(10, y);
+      y += note.h + 4;
     }
     List<Problem> problems = result.problems();
     if (!problems.isEmpty()) {
       y += 4;
-      Label header = popup.add(new Label(Names.tr("export.problems", problems.size()), Theme.WARNING).wrap(width - 20));
+      Label header = body.add(new Label(Names.tr("export.problems", problems.size()), Theme.WARNING).wrap(width - 24));
       header.at(10, y);
       y += header.h + 3;
       int shown = Math.min(problems.size(), 6);
       for (int i = 0; i < shown; i++) {
-        Label line = popup.add(new Label(problemText(problems.get(i)), Theme.TEXT_DIM).wrap(width - 30));
+        Label line = body.add(new Label(problemText(problems.get(i)), Theme.TEXT_DIM).wrap(width - 34));
         line.at(18, y);
         y += line.h + 2;
       }
       if (problems.size() > shown) {
-        popup.add(new Label(Names.tr("export.more", problems.size() - shown), Theme.TEXT_FAINT)).at(18, y);
+        body.add(new Label(Names.tr("export.more", problems.size() - shown), Theme.TEXT_FAINT)).at(18, y);
         y += 11;
       }
     }
-    y += 8;
+    body.contentHeight = y;
+    body.h = Math.min(y, Math.max(40, screenH() - 74));
+    y = body.ly + body.h + 8;
     Button close = new Button(Names.tr("button.done"), popup::close).style(Button.Style.PRIMARY);
     close.w = Math.max(close.w, 50);
     popup.add(close).at(width - 10 - close.w, y);

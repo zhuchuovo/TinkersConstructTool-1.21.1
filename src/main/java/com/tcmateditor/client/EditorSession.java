@@ -1,6 +1,7 @@
 package com.tcmateditor.client;
 
 import com.tcmateditor.model.EntryDoc;
+import com.tcmateditor.model.FluidDoc;
 import com.tcmateditor.model.Languages;
 import com.tcmateditor.model.MaterialDoc;
 import com.tcmateditor.model.UpgradeDoc;
@@ -16,7 +17,7 @@ import java.util.Map;
 public final class EditorSession {
   private EditorSession() {}
 
-  public enum Mode { MATERIALS, ENTRIES, UPGRADES }
+  public enum Mode { MATERIALS, ENTRIES, UPGRADES, FLUIDS }
 
   private static Workspace workspace;
   public static Mode mode = Mode.MATERIALS;
@@ -26,9 +27,12 @@ public final class EditorSession {
   public static EntryDoc entry;
   @Nullable
   public static UpgradeDoc upgrade;
+  @Nullable
+  public static FluidDoc fluid;
   public static int materialTab = 0;
   public static int entryTab = 0;
   public static int upgradeTab = 0;
+  public static int fluidTab = 0;
   /** Apply data changes automatically shortly after editing, off by default so only Apply / Ctrl+Shift+S reloads */
   public static boolean autoApply = false;
   /** Scroll positions per page key */
@@ -49,6 +53,7 @@ public final class EditorSession {
       if (!workspace.entries.isEmpty()) {
         entry = workspace.entries.get(0);
       }
+      if (!workspace.fluids.isEmpty()) fluid = workspace.fluids.get(0);
     }
     return workspace;
   }

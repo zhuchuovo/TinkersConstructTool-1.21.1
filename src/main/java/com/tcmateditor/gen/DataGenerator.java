@@ -35,10 +35,19 @@ public final class DataGenerator {
 
   /** Generates all data files, anything the game would fail to load is left out and added to the problems */
   public static Map<String,String> generate(Workspace workspace, List<Problem> problems) {
+    return generate(workspace, problems, false);
+  }
+
+  /** Export registrations will exist at startup; live reload must still reject unregistered fluids. */
+  public static Map<String,String> generateForExport(Workspace workspace, List<Problem> problems) {
+    return generate(workspace, problems, true);
+  }
+
+  private static Map<String,String> generate(Workspace workspace, List<Problem> problems, boolean export) {
     Map<String,String> files = new TreeMap<>();
     for (MaterialDoc doc : workspace.materials) {
       if (Workspace.isValidId(doc.id)) {
-        MaterialGenerator.generate(doc, workspace, files, problems);
+        MaterialGenerator.generate(doc, workspace, files, problems, export);
       }
     }
     for (EntryDoc doc : workspace.entries) {

@@ -70,10 +70,14 @@ public final class Pickers {
 
   public static void fluid(Consumer<String> onPick) {
     List<Entry> entries = new ArrayList<>();
+    for (com.tcmateditor.model.FluidDoc doc : EditorSession.workspace().fluids) {
+      entries.add(new Entry(doc.id, Component.literal(doc.displayName(EditorSession.uiLanguage())), Component.literal(doc.id), doc.colorInt(), ItemStack.EMPTY));
+    }
     for (Fluid fluid : BuiltInRegistries.FLUID) {
       if (fluid == Fluids.EMPTY) continue;
       if (fluid instanceof FlowingFluid flowing && flowing.getSource() != fluid) continue;
       ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluid);
+      if (EditorSession.workspace().findFluid(id.toString()) != null) continue;
       ItemStack bucket = new ItemStack(fluid.getBucket());
       entries.add(new Entry(id.toString(), fluid.getFluidType().getDescription(), Component.literal(id.toString()), 0, bucket));
     }

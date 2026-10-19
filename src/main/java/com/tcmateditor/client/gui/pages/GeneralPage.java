@@ -116,7 +116,7 @@ public class GeneralPage implements Page {
       TextField[] fluidField = new TextField[1];
       fluidField[0] = form.row(Names.tr("label.fluid"), new TextField(doc.fluid.fluid, form.controlWidth() - 20));
       fluidField[0].hint(Component.literal("tconstruct:molten_iron"));
-      fluidField[0].validator(text -> text.isBlank() || GenUtil.isKnownFluid(text));
+      fluidField[0].validator(text -> text.isBlank() || GenUtil.isKnownFluid(text, EditorSession.workspace()));
       fluidField[0].tooltip(Names.tr("hint.fluid_id"));
       fluidField[0].onChange(text -> { doc.fluid.fluid = text.trim(); Page.changed(); });
       form.view.add(new Button(Component.literal("…"), () -> Pickers.fluid(picked -> {

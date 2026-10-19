@@ -27,6 +27,7 @@ public class Workspace {
   public final List<MaterialDoc> materials = new ArrayList<>();
   public final List<EntryDoc> entries = new ArrayList<>();
   public final List<UpgradeDoc> upgrades = new ArrayList<>();
+  public final List<FluidDoc> fluids = new ArrayList<>();
 
   /** Settings stored in workspace.json */
   private static class Settings {
@@ -34,8 +35,11 @@ public class Workspace {
   }
 
   public static Workspace load() {
+    return load(EditorPaths.workspace());
+  }
+
+  public static Workspace load(Path root) {
     Workspace workspace = new Workspace();
-    Path root = EditorPaths.workspace();
     try {
       Files.createDirectories(root);
       Path settingsFile = root.resolve("workspace.json");
@@ -86,12 +90,24 @@ public class Workspace {
           TCMatEditor.LOG.error("Failed to read upgrade {}", file, e);
         }
       }
+      for (Path file : list(root.resolve("fluids"))) {
+        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+          FluidDoc doc = GSON.fromJson(reader, FluidDoc.class);
+          if (doc != null) {
+            doc.validate();
+            if (isValidId(doc.id)) workspace.fluids.add(doc);
+          }
+        } catch (IOException | JsonParseException e) {
+          TCMatEditor.LOG.error("Failed to read fluid {}", file, e);
+        }
+      }
     } catch (IOException | JsonParseException e) {
       TCMatEditor.LOG.error("Failed to load editor workspace", e);
     }
     workspace.materials.sort((a, b) -> a.id.compareTo(b.id));
     workspace.entries.sort((a, b) -> a.id.compareTo(b.id));
     workspace.upgrades.sort((a, b) -> a.id.compareTo(b.id));
+    workspace.fluids.sort((a, b) -> a.id.compareTo(b.id));
     return workspace;
   }
 
@@ -106,7 +122,10 @@ public class Workspace {
 
   /** Saves every document, removing files of deleted documents */
   public void save() throws IOException {
-    Path root = EditorPaths.workspace();
+    save(EditorPaths.workspace());
+  }
+
+  public void save(Path root) throws IOException {
     Files.createDirectories(root);
     Settings settings = new Settings();
     settings.namespace = namespace;
@@ -152,6 +171,18 @@ public class Workspace {
       if (!written.contains(file)) {
         Files.deleteIfExists(file);
       }
+    }
+
+    Path fluidFolder = root.resolve("fluids");
+    Files.createDirectories(fluidFolder);
+    written.clear();
+    for (FluidDoc doc : fluids) {
+      Path file = fluidFolder.resolve(fileName(doc.id));
+      Files.writeString(file, GSON.toJson(doc), StandardCharsets.UTF_8);
+      written.add(file);
+    }
+    for (Path file : list(fluidFolder)) {
+      if (!written.contains(file)) Files.deleteIfExists(file);
     }
   }
 
@@ -222,6 +253,26 @@ public class Workspace {
     return id;
   }
 
+  public FluidDoc findFluid(String id) {
+    return fluids.stream().filter(doc -> doc.id.equals(id)).findFirst().orElse(null);
+  }
+
+  public String freeFluidId(String namespace, String path) {
+    String base = sanitizePath(path);
+    if (base.isEmpty()) base = "fluid";
+    String id = namespace + ":" + base;
+    int i = 2;
+    while (fluidIdTaken(id)) {
+      id = namespace + ":" + base + "_" + i++;
+    }
+    return id;
+  }
+
+  private boolean fluidIdTaken(String id) {
+    String flowing = id.substring(0, id.indexOf(':') + 1) + "flowing_" + id.substring(id.indexOf(':') + 1);
+    return fluids.stream().filter(doc -> isValidId(doc.id)).anyMatch(doc -> doc.id.equals(id) || doc.flowingId().equals(id) || doc.id.equals(flowing));
+  }
+
   /* Validation */
 
   public static boolean isValidNamespace(String namespace) {
@@ -234,6 +285,7 @@ public class Workspace {
   }
 
   public static boolean isValidId(String id) {
+    if (id == null) return false;
     int i = id.indexOf(':');
     return i > 0 && isValidNamespace(id.substring(0, i)) && isValidPath(id.substring(i + 1));
   }

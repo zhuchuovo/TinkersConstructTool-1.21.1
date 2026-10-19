@@ -6,6 +6,7 @@ import com.tcmateditor.client.gui.EditorScreen;
 import com.tcmateditor.client.texture.PartTextureLibrary;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
@@ -18,6 +19,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddPackFindersEvent;
 import org.lwjgl.glfw.GLFW;
 
 /** Client entry point: Shift+Z opens the editor */
@@ -27,6 +29,9 @@ public final class TCMatEditorClient {
     InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Z, "key.categories.tcmateditor");
 
   public TCMatEditorClient(IEventBus modBus, ModContainer container) {
+    modBus.addListener(AddPackFindersEvent.class, event -> {
+      if (event.getPackType() == PackType.CLIENT_RESOURCES) ClientApply.prepareFluidAssets();
+    });
     modBus.addListener(RegisterKeyMappingsEvent.class, event -> event.register(OPEN_EDITOR));
     modBus.addListener(RegisterClientReloadListenersEvent.class, event ->
       event.registerReloadListener((ResourceManagerReloadListener) manager -> PartTextureLibrary.clear()));

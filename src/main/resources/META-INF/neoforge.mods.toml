@@ -9,7 +9,7 @@ displayName="Tinkers' Construct Tool"
 authors="nizabushangtianm"
 description='''
 In-game material editor for Tinkers' Construct (Shift+Z).
-Everything it creates is plain Tinkers' Construct data/resource pack content, so exported materials keep working without this mod.
+Materials, entries and upgrades use Tinkers' Construct data/resource pack formats. New fluids export to a standalone mod JAR or a KubeJS startup script. Exported content keeps working without this editor.
 '''
 
 [[dependencies.tcmateditor]]

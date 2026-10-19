@@ -7,6 +7,8 @@ import com.tcmateditor.client.gui.Dialogs;
 import com.tcmateditor.client.gui.Theme;
 import com.tcmateditor.gen.DataGenerator;
 import com.tcmateditor.gen.DataGenerator.Problem;
+import com.tcmateditor.gen.GenUtil;
+import com.tcmateditor.model.FluidDoc;
 import com.tcmateditor.model.Workspace;
 import com.tcmateditor.net.ApplyDataPayload;
 import com.tcmateditor.net.ApplyResultPayload;
@@ -14,13 +16,16 @@ import com.tcmateditor.net.FilePacking;
 import com.tcmateditor.net.GiveTestPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +50,74 @@ public final class ClientApply {
   private static String appliedAssets = null;
   /** Content left out of the last apply because the game would reject it */
   private static List<Problem> lastProblems = List.of();
+
+  /** Repair saved fluid resources before the initial client resource reload. */
+  public static void prepareFluidAssets() {
+    try {
+      Workspace workspace = EditorSession.workspace();
+      Path pack = EditorPaths.livePack();
+      prepareFluidAssets(workspace, pack);
+      syncKubeFluidAssets(workspace, pack);
+    } catch (IOException | RuntimeException e) {
+      TCMatEditor.LOG.error("Failed to prepare live fluid assets", e);
+    }
+  }
+
+  static void prepareFluidAssets(Workspace workspace, Path pack) throws IOException {
+    for (Map.Entry<String,byte[]> entry : AssetGenerator.registeredFluidModels(workspace).entrySet()) {
+      Path target = EditorPaths.safeResolve(pack, entry.getKey());
+      Files.createDirectories(target.getParent());
+      Files.write(target, entry.getValue());
+    }
+    // Reuse saved PNGs: startup does not yet have a resource manager for pattern rendering.
+    for (FluidDoc doc : workspace.fluids) {
+      if (!Workspace.isValidId(doc.id) || !doc.generatedTexture) continue;
+      for (boolean flowing : new boolean[] {false, true}) {
+        ResourceLocation id = ResourceLocation.parse(flowing ? doc.flowingTextureId() : doc.stillTextureId());
+        Path source = EditorPaths.safeResolve(pack, "assets/" + id.getNamespace() + "/textures/" + id.getPath() + ".png");
+        Path target = EditorPaths.safeResolve(pack, AssetGenerator.kubeFluidTexturePath(doc, flowing));
+        copyFluidTexture(source, target);
+      }
+    }
+  }
+
+  /** KubeJS builds textures outside Minecraft's resource manager and its models override built-in packs. */
+  private static void syncKubeFluidAssets(Workspace workspace, Path pack) throws IOException {
+    Path kubeAssets = EditorPaths.root().getParent().resolve("kubejs/assets");
+    Map<String,byte[]> models = AssetGenerator.registeredFluidModels(workspace);
+    for (FluidDoc doc : workspace.fluids) {
+      if (!Workspace.isValidId(doc.id) || !doc.generatedTexture || !GenUtil.isKnownFluid(doc.id)) continue;
+      var fluid = BuiltInRegistries.FLUID.get(ResourceLocation.parse(doc.id));
+      // Optional integration: no KubeJS classes are linked or required by the editor.
+      if (!fluid.getFluidType().getClass().getName().startsWith("dev.latvian.mods.kubejs.")) continue;
+      for (boolean flowing : new boolean[] {false, true}) {
+        ResourceLocation id = ResourceLocation.parse(flowing ? doc.flowingTextureId() : doc.stillTextureId());
+        String relative = id.getNamespace() + "/textures/" + id.getPath() + ".png";
+        Path source = EditorPaths.safeResolve(pack, "assets/" + relative);
+        Path target = EditorPaths.safeResolve(kubeAssets, relative);
+        copyFluidTexture(source, target);
+      }
+      for (String relative : List.of(doc.namespace() + "/models/item/" + doc.path() + "_bucket.json",
+                                    doc.namespace() + "/models/block/" + doc.path() + ".json",
+                                    doc.namespace() + "/blockstates/" + doc.path() + ".json")) {
+        byte[] model = models.get("assets/" + relative);
+        if (model == null) continue;
+        Path target = EditorPaths.safeResolve(kubeAssets, relative);
+        Files.createDirectories(target.getParent());
+        Files.write(target, model);
+      }
+    }
+  }
+
+  private static void copyFluidTexture(Path source, Path target) throws IOException {
+    if (!Files.isRegularFile(source)) return;
+    Files.createDirectories(target.getParent());
+    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+    Path sourceMeta = source.resolveSibling(source.getFileName() + ".mcmeta");
+    Path targetMeta = target.resolveSibling(target.getFileName() + ".mcmeta");
+    if (Files.isRegularFile(sourceMeta)) Files.copy(sourceMeta, targetMeta, StandardCopyOption.REPLACE_EXISTING);
+    else Files.deleteIfExists(targetMeta);
+  }
 
   /** Call after any edit */
   public static void markEdited() {
@@ -208,6 +281,7 @@ public final class ClientApply {
       Files.createDirectories(target.getParent());
       Files.write(target, entry.getValue());
     }
+    syncKubeFluidAssets(EditorSession.workspace(), pack);
   }
 
   /** Asks the server for test tools */
